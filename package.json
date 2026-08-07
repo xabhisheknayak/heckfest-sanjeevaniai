@@ -1,0 +1,13 @@
+{
+  "name": "sanjivni-ai-root",
+  "private": true,
+  "scripts": {
+    "dev": "npm run dev --prefix MAIN",
+    "build": "npm run build --prefix MAIN",
+    "preview": "npm run preview --prefix MAIN",
+    "lint": "npm run lint --prefix MAIN"
+  },
+  "dependencies": {
+    "firebase": "^12.17.1"
+  }
+}
