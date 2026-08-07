@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion'
 import { ArrowRight, BadgeCheck, Mail, Phone, UserCircle2 } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { useAuth } from '../hooks/useAuth'
@@ -58,7 +59,9 @@ export default function ProfilePage() {
                 </div>
               ))}
             </div>
-            <Button className="mt-6">Edit profile <ArrowRight className="ml-2 h-4 w-4" /></Button>
+            <Link to="/settings">
+              <Button className="mt-6">Edit profile <ArrowRight className="ml-2 h-4 w-4" /></Button>
+            </Link>
           </Card>
         </div>
       </div>

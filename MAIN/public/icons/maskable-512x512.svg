@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bgGradMask" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#16A34A"/>
+      <stop offset="100%" stop-color="#0D9488"/>
+    </linearGradient>
+  </defs>
+  <!-- Full bleed background for maskable safe area -->
+  <rect width="512" height="512" fill="url(#bgGradMask)"/>
+  <!-- Safe area centered content (within 80% inner zone) -->
+  <g transform="translate(148, 148)">
+    <path d="M108 16 L132 80 L196 108 L132 136 L108 200 L84 136 L20 108 L84 80 Z" fill="#FFFFFF"/>
+    <circle cx="64" cy="52" r="12" fill="#DCFCE7"/>
+    <circle cx="152" cy="160" r="9" fill="#DCFCE7"/>
+  </g>
+</svg>

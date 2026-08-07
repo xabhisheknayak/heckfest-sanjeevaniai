@@ -23,7 +23,7 @@ export default function ImageAnalysisPage() {
       setLoading(true)
       setError('')
       try {
-        const data = await analyzeImage(base64, file.type || 'image/jpeg')
+        const data = await analyzeImage(base64, file.type || 'image/jpeg', file.name)
         setResult(data)
 
         // Save image analysis results to database

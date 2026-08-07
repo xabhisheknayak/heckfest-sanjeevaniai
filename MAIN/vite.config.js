@@ -16,7 +16,7 @@ function localApiPlugin() {
           try {
             const modulePath = resolve(process.cwd(), `./api/${apiName}.js`)
             const { pathToFileURL } = await import('url')
-            const handlerModule = await import(pathToFileURL(modulePath).href)
+            const handlerModule = await import(`${pathToFileURL(modulePath).href}?t=${Date.now()}`)
             const handler = handlerModule.default
 
             // Parse body if POST
@@ -108,6 +108,14 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react(), tailwindcss(), localApiPlugin()],
+    server: {
+      host: true,
+      port: 5173
+    },
+    preview: {
+      host: true,
+      port: 4173
+    },
     build: {
       rollupOptions: {
         output: {
@@ -121,6 +129,9 @@ export default defineConfig(({ mode }) => {
               }
               if (id.includes('lucide-react')) {
                 return 'vendor-lucide'
+              }
+              if (id.includes('leaflet')) {
+                return 'vendor-leaflet'
               }
               return 'vendor-core'
             }

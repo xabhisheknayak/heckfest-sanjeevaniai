@@ -12,11 +12,11 @@ export async function analyzeSymptoms(symptoms, duration = '', medications = '')
   return await response.json()
 }
 
-export async function analyzeImage(imageBase64, mimeType) {
+export async function analyzeImage(imageBase64, mimeType, fileName = '') {
   const response = await fetch('/api/analyze-image', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ imageBase64, mimeType }),
+    body: JSON.stringify({ imageBase64, mimeType, fileName }),
   })
 
   if (!response.ok) {
