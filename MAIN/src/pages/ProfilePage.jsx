@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { useAuth } from '../hooks/useAuth'
+import { EmergencyContactsManager } from '../components/common/EmergencyContactsManager'
 
 export default function ProfilePage() {
   const { profile, user } = useAuth()
@@ -62,6 +63,12 @@ export default function ProfilePage() {
             <Link to="/settings">
               <Button className="mt-6">Edit profile <ArrowRight className="ml-2 h-4 w-4" /></Button>
             </Link>
+          </Card>
+        </div>
+
+        <div className="mt-6">
+          <Card className="p-6 dark:border-slate-800 dark:bg-slate-900/80">
+            <EmergencyContactsManager />
           </Card>
         </div>
       </div>

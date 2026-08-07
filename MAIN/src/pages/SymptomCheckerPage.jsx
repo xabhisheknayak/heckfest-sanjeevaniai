@@ -1,10 +1,10 @@
 import { motion } from 'framer-motion'
-import { Activity, ArrowRight, HeartPulse, Sparkles } from 'lucide-react'
+import { Activity, ArrowRight, HeartPulse, Sparkles, ShieldAlert, Phone, Ambulance, Hospital, AlertTriangle } from 'lucide-react'
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { Input } from '../components/ui/Input'
-import { Toast } from '../components/ui/Toast'
 import { analyzeSymptoms } from '../lib/gemini'
 import { useAuth } from '../hooks/useAuth'
 import { firestoreService } from '../services/firestoreService'
@@ -62,7 +62,7 @@ export default function SymptomCheckerPage() {
       }
     } catch (err) {
       console.error('Symptom checker analysis failure:', err)
-      setError('Unable to analyze symptoms right now. Please try again later.')
+      setError('AI analysis is unavailable. If you believe this is an emergency, contact emergency services immediately.')
     } finally {
       setLoading(false)
     }
@@ -103,9 +103,74 @@ export default function SymptomCheckerPage() {
               </div>
             </div>
             <div className="space-y-3">
-              {error && <Toast title="Error" message={error} tone="warning" />}
+              {error && (
+                <div className="rounded-2xl border border-amber-300 bg-amber-50 p-4 dark:border-amber-900/60 dark:bg-amber-950/40">
+                  <div className="flex items-start gap-2.5 text-amber-800 dark:text-amber-300">
+                    <AlertTriangle className="h-5 w-5 shrink-0 text-amber-600 mt-0.5" />
+                    <div>
+                      <p className="font-bold text-xs uppercase tracking-wider">AI Service Status</p>
+                      <p className="mt-1 text-xs text-amber-900 dark:text-amber-200">{error}</p>
+                    </div>
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <a href="tel:112" className="inline-flex items-center gap-1 rounded-xl bg-red-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-red-700">
+                      <Phone className="h-3.5 w-3.5" /> Call 112 / 911
+                    </a>
+                    <Link to="/maps" className="inline-flex items-center gap-1 rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200">
+                      <Hospital className="h-3.5 w-3.5" /> Find Hospital
+                    </Link>
+                  </div>
+                </div>
+              )}
+
               {result ? (
                 <>
+                  {/* High Severity / Emergency Recommendation Banner */}
+                  {(result.severity === 'high' || /emergency|urgent|immediate/i.test(result.urgency || '')) && (
+                    <div className="rounded-2xl border-2 border-red-500 bg-red-50 p-5 shadow-lg dark:border-red-600 dark:bg-red-950/50">
+                      <div className="flex items-center gap-2.5 text-red-700 dark:text-red-300">
+                        <ShieldAlert className="h-6 w-6 animate-pulse text-red-600" />
+                        <div>
+                          <h3 className="text-sm font-bold">🚨 POSSIBLE MEDICAL EMERGENCY</h3>
+                          <p className="text-[11px] text-red-600 dark:text-red-400 font-semibold">High Risk Warning Signs Detected</p>
+                        </div>
+                      </div>
+
+                      <p className="mt-2 text-xs font-semibold text-slate-900 dark:text-slate-100">
+                        Your reported symptoms may require urgent medical evaluation.
+                      </p>
+
+                      <div className="mt-3 grid gap-2">
+                        <a
+                          href="tel:112"
+                          className="flex items-center justify-center gap-2 rounded-xl bg-red-600 px-3.5 py-2.5 text-xs font-bold text-white shadow hover:bg-red-700 transition"
+                        >
+                          <Phone className="h-4 w-4" /> CALL EMERGENCY SERVICES (112 / 911)
+                        </a>
+
+                        <div className="grid grid-cols-2 gap-2">
+                          <a
+                            href="tel:102"
+                            className="flex items-center justify-center gap-1.5 rounded-xl border border-red-600 bg-white px-3 py-2 text-xs font-bold text-red-700 hover:bg-red-50 dark:bg-slate-900 dark:text-red-300"
+                          >
+                            <Ambulance className="h-3.5 w-3.5" /> CALL AMBULANCE (102)
+                          </a>
+
+                          <Link
+                            to="/maps"
+                            className="flex items-center justify-center gap-1.5 rounded-xl bg-slate-900 px-3 py-2 text-xs font-bold text-white hover:bg-slate-800 dark:bg-slate-800"
+                          >
+                            <Hospital className="h-3.5 w-3.5" /> FIND NEARBY HOSPITAL
+                          </Link>
+                        </div>
+                      </div>
+
+                      <p className="mt-3 text-[10px] text-slate-500 dark:text-slate-400">
+                        AI assistance only, not a medical diagnosis. SanjivniAI does not automatically dispatch emergency vehicles.
+                      </p>
+                    </div>
+                  )}
+
                   <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 dark:border-slate-800 dark:bg-slate-950/60">
                     <p className="font-semibold text-slate-900 dark:text-slate-100">Possible conditions</p>
                     <p className="mt-2 text-sm leading-7 text-slate-600 dark:text-slate-300">{result.possible_conditions?.join(', ')}</p>
@@ -136,7 +201,7 @@ export default function SymptomCheckerPage() {
                   </div>
                   <div className="rounded-2xl border border-red-100 bg-red-50/15 p-4 dark:border-red-950/20 dark:bg-red-950/5">
                     <p className="font-semibold text-red-800 dark:text-red-400">Medical disclaimer</p>
-                    <p className="mt-2 text-xs leading-5 text-slate-500 dark:text-slate-400">{result.disclaimer}</p>
+                    <p className="mt-2 text-xs leading-5 text-slate-500 dark:text-slate-400">{result.disclaimer || 'AI assistance only, not a medical diagnosis.'}</p>
                   </div>
                 </>
               ) : (
