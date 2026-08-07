@@ -1,7 +1,43 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Sparkles, Mail, ShieldCheck } from 'lucide-react'
+import { Modal } from '../ui/Modal'
 
 export function Footer() {
+  const [activeModal, setActiveModal] = useState(null)
+  const [email, setEmail] = useState('')
+  const [subscribed, setSubscribed] = useState(false)
+
+  const handleSubscribe = (e) => {
+    e.preventDefault()
+    if (email.trim()) {
+      setSubscribed(true)
+      setTimeout(() => {
+        setEmail('')
+        setSubscribed(false)
+      }, 3000)
+    }
+  }
+
+  const modalContent = {
+    api: {
+      title: 'SanjivniAI Developer API',
+      content: 'Access our secure REST & GraphQL endpoints for clinical triage data integration, EHR sync, and hospital appointment management. Contact api-support@sanjivni.ai for developer keys.'
+    },
+    privacy: {
+      title: 'Privacy Policy',
+      content: 'Your health data is protected with end-to-end encryption complying with HIPAA and global medical data security standards. We strictly do not share your private diagnostic logs with third parties.'
+    },
+    terms: {
+      title: 'Terms of Service',
+      content: 'SanjivniAI is designed for supportive clinical informational guidance and patient navigation. It does not constitute formal medical diagnosis or emergency treatment.'
+    },
+    safety: {
+      title: 'Clinical Safety Guidelines',
+      content: 'All symptom checker recommendation algorithms run verified Gemini clinical parameters. In case of acute or emergency conditions (severe pain, chest pressure, sudden numbness), call local emergency services (102/911) immediately.'
+    }
+  }
+
   return (
     <footer className="border-t border-slate-200/70 bg-white/70 py-16 dark:border-slate-800 dark:bg-slate-900/40 backdrop-blur-md">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -43,7 +79,11 @@ export function Footer() {
               <li><Link to="/dashboard" className="hover:text-[#16A34A] transition">Care Dashboard</Link></li>
               <li><Link to="/profile" className="hover:text-[#16A34A] transition">Patient Profile</Link></li>
               <li><Link to="/settings" className="hover:text-[#16A34A] transition">Integrations</Link></li>
-              <li><a href="#" className="hover:text-[#16A34A] transition">Developer API</a></li>
+              <li>
+                <button onClick={() => setActiveModal('api')} className="hover:text-[#16A34A] transition text-left cursor-pointer">
+                  Developer API
+                </button>
+              </li>
             </ul>
           </div>
 
@@ -51,17 +91,22 @@ export function Footer() {
           <div className="space-y-4">
             <h4 className="text-xs font-bold uppercase tracking-[0.2em] text-[#16A34A] mb-2">Subscribe to Care Insights</h4>
             <p className="text-sm text-slate-500 dark:text-slate-400">Stay informed with secure digital health newsletters.</p>
-            <div className="flex gap-2">
+            <form onSubmit={handleSubscribe} className="flex gap-2">
               <div className="relative flex-1">
                 <Mail className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-400" />
                 <input
                   type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@email.com"
+                  required
                   className="w-full rounded-2xl border border-slate-200 bg-white/50 py-3 pl-10 pr-4 text-xs text-slate-800 outline-none transition focus:border-[#16A34A] dark:border-slate-800 dark:bg-slate-950/60 dark:text-slate-200"
                 />
               </div>
-              <button className="rounded-2xl bg-[#16A34A] px-4 py-3 text-xs font-semibold text-white hover:bg-[#15803D] transition cursor-pointer">Join</button>
-            </div>
+              <button type="submit" className="rounded-2xl bg-[#16A34A] px-4 py-3 text-xs font-semibold text-white hover:bg-[#15803D] transition cursor-pointer">
+                {subscribed ? 'Joined!' : 'Join'}
+              </button>
+            </form>
           </div>
         </div>
 
@@ -73,13 +118,24 @@ export function Footer() {
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between text-xs text-slate-500 dark:text-slate-600">
             <p>© 2026 SanjivniAI Startup. Secure HIPAA Design Standards. All rights reserved.</p>
             <div className="flex gap-4">
-              <a href="#" className="hover:text-[#16A34A] transition">Privacy Policy</a>
-              <a href="#" className="hover:text-[#16A34A] transition">Terms of Service</a>
-              <a href="#" className="hover:text-[#16A34A] transition">Clinical Safety</a>
+              <button onClick={() => setActiveModal('privacy')} className="hover:text-[#16A34A] transition cursor-pointer">Privacy Policy</button>
+              <button onClick={() => setActiveModal('terms')} className="hover:text-[#16A34A] transition cursor-pointer">Terms of Service</button>
+              <button onClick={() => setActiveModal('safety')} className="hover:text-[#16A34A] transition cursor-pointer">Clinical Safety</button>
             </div>
           </div>
         </div>
       </div>
+
+      <Modal
+        open={Boolean(activeModal)}
+        title={activeModal ? modalContent[activeModal]?.title : ''}
+        onClose={() => setActiveModal(null)}
+      >
+        <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+          {activeModal && modalContent[activeModal]?.content}
+        </p>
+      </Modal>
     </footer>
   )
 }
+

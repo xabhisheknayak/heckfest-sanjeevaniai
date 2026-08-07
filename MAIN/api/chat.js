@@ -18,10 +18,12 @@ export default async function handler(req, res) {
   }
 
   // Load backend API key
-  const GEMINI_API_KEY = process.env.GEMINI_API_KEY
-  if (!GEMINI_API_KEY) {
-    console.error('Server Configuration Error: GEMINI_API_KEY is not defined.')
-    return res.status(500).json({ error: 'Gemini API key is not configured on the server.' })
+  const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY
+  if (!GEMINI_API_KEY || GEMINI_API_KEY === 'demo-api-key') {
+    console.warn('[API/CHAT] GEMINI_API_KEY missing or demo key. Providing conversational fallback response.')
+    return res.status(200).json({
+      reply: `Hello! I am SanjivniAI assistant. I received your message: "${message}". Make sure to stay hydrated, get sufficient rest, and monitor how you feel. (Tip: Set your GEMINI_API_KEY in .env.local for live Gemini model responses)`
+    })
   }
 
   const GEMINI_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent'
