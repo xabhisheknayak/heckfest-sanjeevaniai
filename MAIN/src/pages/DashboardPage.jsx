@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion'
 import { Activity, Camera, Download, HeartPulse, PlusCircle, ShieldCheck, Sparkles, Stethoscope } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { Navbar } from '../components/layout/Navbar'
 import { Sidebar } from '../components/layout/Sidebar'
 import { Button } from '../components/ui/Button'
@@ -14,15 +14,27 @@ import { HealthTips } from '../components/common/HealthTips'
 import { RiskScoreCard } from '../components/common/RiskScoreCard'
 import { AIChatAssistant } from '../components/common/AIChatAssistant'
 import { EmergencyButton } from '../components/common/EmergencyButton'
+import { LocationCard } from '../components/common/LocationCard'
 import { SEO } from '../components/common/SEO'
 
+import { getNavigationForRole } from '../config/navigationConfig'
+
 export default function DashboardPage() {
-  const { profile, fetchAppointments, fetchMedicalHistory, createAppointment, createMedicalHistory } = useAuth()
+  const routerLocation = useLocation()
+  const { profile, role, fetchAppointments, fetchMedicalHistory, createAppointment, createMedicalHistory } = useAuth()
+  const navConfig = getNavigationForRole(role)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [appointments, setAppointments] = useState([])
   const [history, setHistory] = useState([])
   const [message, setMessage] = useState('')
+  const [errorMessage, setErrorMessage] = useState('')
   const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (routerLocation.state?.unauthorizedNotice) {
+      setErrorMessage('Access Denied: Your patient account does not have authorization to access that area.')
+    }
+  }, [routerLocation.state])
 
   useEffect(() => {
     const load = async () => {
@@ -85,9 +97,9 @@ export default function DashboardPage() {
         <main className="flex-1 lg:ml-0">
           <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[#16A34A]">Care overview</p>
-              <h1 className="mt-2 text-3xl font-semibold text-slate-950 dark:text-white">Welcome back, {profile?.name || 'there'}</h1>
-              {profile?.email && <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{profile.email} • Role: {profile.role || 'patient'}</p>}
+              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[#16A34A]">{navConfig.roleLabel}</p>
+              <h1 className="mt-2 text-3xl font-semibold text-slate-950 dark:text-white">{navConfig.greetingTitle(profile?.name)}</h1>
+              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{navConfig.greetingSubtitle}</p>
             </div>
             <SearchBar placeholder="Search reports or doctors" />
           </div>
@@ -238,7 +250,12 @@ export default function DashboardPage() {
             </Card>
           </div>
 
+          <div className="mt-6">
+            <LocationCard />
+          </div>
+
           {message && <div className="mt-6"><Toast title="Update" message={message} tone="success" /></div>}
+          {errorMessage && <div className="mt-6"><Toast title="Access Notice" message={errorMessage} tone="warning" /></div>}
         </main>
       </div>
       <EmergencyButton />

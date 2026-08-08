@@ -2,6 +2,8 @@ import { Suspense, lazy } from 'react'
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import { ProtectedRoute } from './components/ProtectedRoute'
+import { RoleProtectedRoute } from './components/RoleProtectedRoute'
+import { USER_ROLES } from './constants/roles'
 import { AuthProvider } from './context/AuthContext'
 import { PageLoader } from './components/ui/PageLoader'
 import { ErrorBoundary } from './components/common/ErrorBoundary'
@@ -20,6 +22,8 @@ const DoctorFinderPage = lazy(() => import('./pages/DoctorFinderPage'))
 const PharmacyFinderPage = lazy(() => import('./pages/PharmacyFinderPage'))
 const AppointmentBookingPage = lazy(() => import('./pages/AppointmentBookingPage'))
 const MedicalHistoryPage = lazy(() => import('./pages/MedicalHistoryPage'))
+const AdminDashboardPage = lazy(() => import('./pages/AdminDashboardPage'))
+const DoctorDashboardPage = lazy(() => import('./pages/DoctorDashboardPage'))
 const ProfilePage = lazy(() => import('./pages/ProfilePage'))
 const SettingsPage = lazy(() => import('./pages/SettingsPage'))
 const MapsPage = lazy(() => import('./pages/MapsPage'))
@@ -39,6 +43,8 @@ function AnimatedRoutes() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
+          
+          {/* Patient Portal Routes */}
           <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
           <Route path="/symptom-checker" element={<ProtectedRoute><SymptomCheckerPage /></ProtectedRoute>} />
           <Route path="/symptoms" element={<Navigate to="/symptom-checker" replace />} />
@@ -51,6 +57,27 @@ function AnimatedRoutes() {
           <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
           <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
           <Route path="/maps" element={<ProtectedRoute><MapsPage /></ProtectedRoute>} />
+
+          {/* Role-Restricted Doctor Routes */}
+          <Route
+            path="/doctor/*"
+            element={
+              <RoleProtectedRoute allowedRoles={[USER_ROLES.DOCTOR, USER_ROLES.ADMIN]}>
+                <DoctorDashboardPage />
+              </RoleProtectedRoute>
+            }
+          />
+
+          {/* Role-Restricted Admin Routes */}
+          <Route
+            path="/admin/*"
+            element={
+              <RoleProtectedRoute allowedRoles={[USER_ROLES.ADMIN]}>
+                <AdminDashboardPage />
+              </RoleProtectedRoute>
+            }
+          />
+
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </motion.div>
