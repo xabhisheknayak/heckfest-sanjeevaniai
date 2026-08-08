@@ -1,13 +1,9 @@
-const CACHE_NAME = 'sanjivni-v1'
+const CACHE_NAME = 'sanjivni-v3'
 const STATIC_ASSETS = [
   '/',
   '/index.html',
   '/manifest.json',
-  '/favicon.svg',
-  '/icons/pwa-192x192.svg',
-  '/icons/pwa-512x512.svg',
-  '/icons/maskable-512x512.svg',
-  '/icons/apple-touch-icon.svg'
+  '/favicon.svg'
 ]
 
 // Install Service Worker and Precache Core Static Assets

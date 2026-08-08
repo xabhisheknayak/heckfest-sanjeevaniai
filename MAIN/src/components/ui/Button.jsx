@@ -12,7 +12,7 @@ const variants = {
 }
 
 export function Button({ children, variant = 'primary', className = '', loading = false, disabled = false, ...props }) {
-  const isCustomBg = className.includes('bg-')
+  const isCustomBg = /(?:^| )bg-/.test(className)
   let selectedVariantClass = variants[variant] || variants.primary
   if (variant === 'primary' && isCustomBg) {
     selectedVariantClass = 'shadow-sm disabled:opacity-50 disabled:cursor-not-allowed'
