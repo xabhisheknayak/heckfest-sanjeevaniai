@@ -1,20 +1,16 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { AlertTriangle, Phone, Ambulance, MapPin, Share2, UserCheck, Hospital, X, ShieldAlert, AlertCircle, CheckCircle2, Navigation, RefreshCw, Settings, Check } from 'lucide-react'
-import { doctors } from '../../data/doctors'
-import { getNearbyPlaces } from '../../lib/maps'
-import { useLocation, createMapLink, createEmergencyMessage } from '../../hooks/useLocation'
-import { LocationStatus } from './LocationStatus'
-import { AlertTriangle, Phone, Ambulance, MapPin, Share2, UserCheck, Hospital, X, ShieldAlert, AlertCircle, CheckCircle2, Navigation, MessageCircle, ExternalLink } from 'lucide-react'
+import { AlertTriangle, Phone, Ambulance, MapPin, Share2, UserCheck, Hospital, X, ShieldAlert, AlertCircle, CheckCircle2, Navigation, RefreshCw, Settings, Check, MessageCircle, ExternalLink } from 'lucide-react'
 import { doctors } from '../../data/doctors'
 import { getNearbyPlaces, generateBingMapsDoctorUrl } from '../../lib/maps'
+import { useLocation, createMapLink, createEmergencyMessage } from '../../hooks/useLocation'
+import { LocationStatus } from './LocationStatus'
 
 // Configurable Emergency Numbers for Target Region (India / Global)
 const EMERGENCY_CONFIG = {
   SERVICES_NUMBER: '112',
   SERVICES_LABEL: 'CALL EMERGENCY SERVICES (112 / 911)',
   AMBULANCE_NUMBER: '102',
-  AMBULANCE_LABEL: 'CALL AMBULANCE (102)'
   AMBULANCE_LABEL: 'CALL AMBULANCE (102)',
   ICE_CONTACT: {
     NAME: 'Sunita Sharma',
@@ -42,13 +38,7 @@ export function EmergencyButton() {
     copyToClipboard
   } = useLocation()
 
-  const [primaryContact, setPrimaryContact] = useState({ name: 'Rajesh Sharma', relationship: 'Spouse', phone: '+91 98765 43210', isPrimary: true })
-  // Location States: 'prompt' | 'detecting' | 'detected' | 'denied' | 'unavailable' | 'timeout' | 'unsupported'
-  const [locationStatus, setLocationStatus] = useState('prompt')
-  const [locationData, setLocationData] = useState(null)
   const [addressName, setAddressName] = useState('')
-  const [locationErrorMessage, setLocationErrorMessage] = useState('')
-  const [locationCopied, setLocationCopied] = useState(false)
   const [primaryContact, setPrimaryContact] = useState({ name: 'Sunita Sharma', relationship: 'Spouse', phone: '+91 98765 12345', isPrimary: true })
   const [nearbyHospitals, setNearbyHospitals] = useState([])
   const [loadingHospitals, setLoadingHospitals] = useState(false)
@@ -118,55 +108,6 @@ export function EmergencyButton() {
     }
     fetchHospitals()
   }, [locationData])
-
-  // Real Geolocation Fetch Handler
-  const requestLocation = useCallback(() => {
-    if (!navigator.geolocation) {
-      setLocationStatus('unsupported')
-      setLocationErrorMessage('Geolocation is not supported by your browser. Please describe your location verbally when calling.')
-      return
-    }
-
-    setLocationStatus('detecting')
-    setLocationErrorMessage('')
-
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const lat = position.coords.latitude
-        const lng = position.coords.longitude
-        setLocationData({
-          latitude: lat,
-          longitude: lng,
-          accuracy: Math.round(position.coords.accuracy)
-        })
-        setLocationStatus('detected')
-        // Perform Reverse Geocoding to get readable address
-        performReverseGeocode(lat, lng)
-      },
-      (error) => {
-        setLocationData(null)
-        switch (error.code) {
-          case error.PERMISSION_DENIED:
-            setLocationStatus('denied')
-            setLocationErrorMessage('Location permission was denied. You can still call emergency services.')
-            break
-          case error.POSITION_UNAVAILABLE:
-            setLocationStatus('unavailable')
-            setLocationErrorMessage('Unable to determine your location. Please provide your location verbally when calling.')
-            break
-          case error.TIMEOUT:
-            setLocationStatus('timeout')
-            setLocationErrorMessage('Location request timed out. Please provide your location verbally when calling.')
-            break
-          default:
-            setLocationStatus('unavailable')
-            setLocationErrorMessage('Unable to determine your location. Please provide your location verbally when calling.')
-            break
-        }
-      },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-    )
-  }, [])
 
   // Auto-request location when SOS modal opens
   useEffect(() => {
@@ -324,13 +265,6 @@ export function EmergencyButton() {
                     {/* Success State Details */}
                     {locationStatus === 'detected' && locationData && (
                       <div className="mt-2.5 space-y-1">
-                        <div className="text-xs font-mono text-emerald-700 dark:text-emerald-400">
-                          Lat: {locationData.latitude}, Lng: {locationData.longitude}
-                        </div>
-                        <div className="text-[11px] font-semibold text-slate-500">
-                          Accuracy: approximately {locationData.accuracy} m
-                        </div>
-                      <div className="mt-2 space-y-1">
                         {addressName && (
                           <p className="text-xs font-medium text-slate-800 dark:text-slate-200">
                             📍 <strong>Address:</strong> {addressName}
@@ -430,20 +364,14 @@ export function EmergencyButton() {
                       <Ambulance className="h-5 w-5" /> 🚑 {EMERGENCY_CONFIG.AMBULANCE_LABEL}
                     </a>
 
-                    <div className="flex gap-3 pt-1">
+                    <div className="flex flex-wrap gap-3 pt-1">
                       <button
                         onClick={handleStartCountdown}
-                        className="flex-1 items-center justify-center gap-2 rounded-2xl bg-slate-900 px-4 py-3 font-semibold text-white transition hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700"
-                        className="flex items-center justify-center gap-2 rounded-2xl bg-slate-900 px-4 py-3 font-semibold text-white transition hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 cursor-pointer"
+                        className="flex items-center justify-center gap-2 rounded-2xl bg-red-600 px-4 py-3 font-bold text-white hover:bg-red-700 cursor-pointer"
                       >
-                        <AlertTriangle className="h-4 w-4 inline mr-1" /> START SOS
+                        <AlertTriangle className="h-4 w-4" /> START SOS
                       </button>
 
-                      <button onClick={handleCancel} className="rounded-2xl border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800">
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
                       <button
                         onClick={handleShareLocation}
                         disabled={!locationData}
@@ -452,12 +380,12 @@ export function EmergencyButton() {
                         <Share2 className="h-4 w-4" /> {locationCopied ? 'COPIED!' : '📍 SHARE LOCATION'}
                       </button>
                     </div>
-                  </div>
 
-                  <div className="flex justify-end">
-                    <button onClick={handleCancel} className="text-sm font-medium text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 cursor-pointer">
-                      Cancel
-                    </button>
+                    <div className="flex justify-end pt-2">
+                      <button onClick={handleCancel} className="text-sm font-medium text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 cursor-pointer">
+                        Cancel
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}
@@ -528,27 +456,12 @@ export function EmergencyButton() {
                       <LocationStatus status={locationStatus} />
                     </div>
 
-                    {locationStatus === 'detected' && locationData ? (
-                      <div className="mt-2.5 flex flex-col gap-1">
-                        <span className="text-xs font-mono text-slate-700 dark:text-slate-300">
-                          Lat: {locationData.latitude}, Lng: {locationData.longitude}
-                        </span>
-                        <span className="text-[11px] text-slate-500">
-                          Accuracy: approximately {locationData.accuracy} m
-                        </span>
-                      {locationData && (
-                        <button onClick={handleShareLocation} className="flex items-center gap-1 text-xs font-bold text-emerald-600 hover:underline dark:text-emerald-400 cursor-pointer">
-                          <Share2 className="h-3.5 w-3.5" /> {locationCopied ? 'COPIED!' : 'SHARE'}
-                        </button>
-                      )}
-                    </div>
-
                     {addressName ? (
-                      <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 text-xs font-semibold text-slate-800 dark:text-slate-200">
+                      <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 text-xs font-semibold text-slate-800 dark:text-slate-200 mt-2">
                         📍 {addressName}
                       </div>
                     ) : locationData ? (
-                      <p className="text-xs font-mono text-emerald-700 dark:text-emerald-400">
+                      <p className="mt-2 text-xs font-mono text-emerald-700 dark:text-emerald-400">
                         Lat: {locationData.latitude.toFixed(4)}, Lng: {locationData.longitude.toFixed(4)} (±{locationData.accuracy}m)
                       </p>
                     ) : (
@@ -572,33 +485,6 @@ export function EmergencyButton() {
                       >
                         <Navigation className="h-3.5 w-3.5" /> 🗺️ OPEN IN MAP
                       </button>
-                    </div>
-                  </div>
-
-                  {/* Primary Emergency Contact */}
-                      <p className="text-xs text-amber-700 dark:text-amber-400">
-                        {locationErrorMessage || 'Location unavailable. Please describe your location verbally.'}
-                      </p>
-                    )}
-
-                    {/* Quick Maps Navigation Buttons */}
-                    <div className="flex gap-2 pt-1">
-                      <a
-                        href={googleMapsUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex-1 py-1.5 text-center text-xs font-semibold rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center gap-1"
-                      >
-                        <Globe className="h-3.5 w-3.5 text-blue-500" /> Google Maps
-                      </a>
-                      <a
-                        href={bingMapsUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex-1 py-1.5 text-center text-xs font-semibold rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center gap-1"
-                      >
-                        <ExternalLink className="h-3.5 w-3.5 text-teal-500" /> Bing Maps
-                      </a>
                     </div>
                   </div>
 
@@ -628,9 +514,12 @@ export function EmergencyButton() {
 
                       <button
                         onClick={() => copyToClipboard(createEmergencyMessage(locationData?.latitude, locationData?.longitude))}
-                        className="flex items-center justify-center gap-1.5 rounded-xl border border-emerald-600 bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700 transition hover:bg-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-300"
+                        className="flex items-center justify-center gap-1.5 rounded-xl border border-emerald-600 bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700 transition hover:bg-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-300 cursor-pointer"
                       >
                         💬 {locationCopied ? 'COPIED!' : 'COPY ICE MSG'}
+                      </button>
+
+                      <button
                         onClick={handleWhatsAppAlert}
                         className="flex items-center justify-center gap-1.5 rounded-xl bg-teal-600 px-3 py-2 text-xs font-bold text-white transition hover:bg-teal-700 cursor-pointer"
                       >
@@ -647,12 +536,10 @@ export function EmergencyButton() {
                       </div>
                       <button
                         onClick={openInMaps}
-                        className="flex items-center gap-1 text-xs font-bold text-indigo-600 hover:underline dark:text-indigo-400"
+                        className="flex items-center gap-1 text-xs font-bold text-indigo-600 hover:underline dark:text-indigo-400 cursor-pointer"
                       >
                         <Navigation className="h-3.5 w-3.5" /> OPEN IN MAPS
                       </button>
-                        <Navigation className="h-3.5 w-3.5" /> MAP VIEW
-                      </a>
                     </div>
 
                     {loadingHospitals ? (
@@ -700,16 +587,14 @@ export function EmergencyButton() {
                         <p className="text-xs text-slate-600 dark:text-slate-400">
                           Search nearby emergency hospitals directly on Google Maps.
                         </p>
-                        <button
-                          onClick={openInMaps}
                         <a
                           href={googleMapsUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="mt-3 inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-xs font-bold text-white transition hover:bg-indigo-700"
+                          className="mt-3 inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-xs font-bold text-white transition hover:bg-indigo-700 cursor-pointer"
                         >
                           <Navigation className="h-4 w-4" /> 📍 OPEN NEARBY HOSPITALS IN MAPS
-                        </button>
+                        </a>
                       </div>
                     )}
                   </div>

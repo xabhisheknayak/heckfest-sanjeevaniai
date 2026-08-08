@@ -1,14 +1,8 @@
 import { motion } from 'framer-motion'
 import { 
-<<<<<<< HEAD
   ClipboardList, HeartPulse, Brain, CalendarDays, Search, 
   Plus, User, Activity, Stethoscope, Database, 
   Trash2, Edit3, Clock, Phone, Droplet, Weight, Ruler, ChevronRight
-=======
-  ClipboardList, HeartPulse, Brain, CalendarDays, Camera, FileText, Search, 
-  Plus, User, Activity, Stethoscope, AlertTriangle, ShieldCheck, Database, 
-  Trash2, Edit3, CheckCircle2, Clock, MapPin, Phone, Droplet, Weight, Ruler, ChevronRight
->>>>>>> 10b16c0bf174bcc9b6c1219facfcb3d40d032b00
 } from 'lucide-react'
 import { useCallback, useEffect, useState, useMemo } from 'react'
 import { Button } from '../components/ui/Button'
@@ -144,11 +138,7 @@ export default function MedicalHistoryPage() {
       }
 
       // 3. Fetch app records (symptoms, appointments, AI image scans, etc.)
-<<<<<<< HEAD
       const [notes, symptoms, _reports, appointments, _images] = await Promise.all([
-=======
-      const [notes, symptoms, reports, appointments, images] = await Promise.all([
->>>>>>> 10b16c0bf174bcc9b6c1219facfcb3d40d032b00
         fetchMedicalHistory ? fetchMedicalHistory() : [],
         fetchHealthRecords ? fetchHealthRecords() : [],
         fetchReports ? fetchReports() : [],
