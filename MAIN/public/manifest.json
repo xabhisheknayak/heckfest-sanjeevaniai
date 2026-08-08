@@ -1,0 +1,59 @@
+{
+  "name": "SanjivniAI - AI Digital Healthcare Companion",
+  "short_name": "SanjivniAI",
+  "description": "Navigate symptoms, consult specialists, track health timelines, and access care guidance offline.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#020617",
+  "theme_color": "#16A34A",
+  "categories": [
+    "health",
+    "medical",
+    "lifestyle"
+  ],
+  "icons": [
+    {
+      "src": "/icons/pwa-192x192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/pwa-512x512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/maskable-512x512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Symptom Checker",
+      "short_name": "Check Symptoms",
+      "description": "Evaluate symptoms using Gemini AI intake",
+      "url": "/symptom-checker",
+      "icons": [{ "src": "/icons/pwa-192x192.svg", "sizes": "192x192" }]
+    },
+    {
+      "name": "Find Doctor",
+      "short_name": "Doctors",
+      "description": "Connect with verified medical specialists",
+      "url": "/doctor-finder",
+      "icons": [{ "src": "/icons/pwa-192x192.svg", "sizes": "192x192" }]
+    },
+    {
+      "name": "Facility Locator",
+      "short_name": "Maps",
+      "description": "Find nearby hospitals and emergency centers",
+      "url": "/maps",
+      "icons": [{ "src": "/icons/pwa-192x192.svg", "sizes": "192x192" }]
+    }
+  ]
+}

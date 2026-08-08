@@ -1,17 +1,17 @@
 import { motion } from 'framer-motion'
 import { ArrowRight, MapPin } from 'lucide-react'
 import { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { SearchBar } from '../components/ui/SearchBar'
 import { doctors } from '../data/doctors'
-import { Toast } from '../components/ui/Toast'
 
 export default function DoctorFinderPage() {
+  const navigate = useNavigate()
   const [query, setQuery] = useState('')
   const [specialty, setSpecialty] = useState('All')
   const [sortBy, setSortBy] = useState('rating')
-  const [message, setMessage] = useState('')
 
   const filteredDoctors = useMemo(() => {
     const next = doctors.filter((doctor) => {
@@ -29,7 +29,12 @@ export default function DoctorFinderPage() {
   const specialties = ['All', ...new Set(doctors.map((doctor) => doctor.specialization))]
 
   const handleBook = (doctor) => {
-    setMessage(`Appointment request sent to ${doctor.name}.`)
+    navigate('/appointments', {
+      state: {
+        doctor: { id: doctor.id, name: doctor.name, specialty: doctor.specialization },
+        facility: { name: doctor.hospital }
+      }
+    })
   }
 
   return (
@@ -55,8 +60,6 @@ export default function DoctorFinderPage() {
             </select>
           </div>
         </div>
-
-        {message && <div className="mb-6"><Toast title="Appointment" message={message} tone="success" /></div>}
 
         <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
           {filteredDoctors.map((doctor) => (

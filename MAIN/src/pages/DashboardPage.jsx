@@ -129,7 +129,7 @@ export default function DashboardPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <Button variant="secondary" onClick={handleExportHistory} className="gap-2"><Download className="h-4 w-4" /> Export</Button>
-                  <Button variant="ghost">View all</Button>
+                  <Link to="/medical-history"><Button variant="ghost">View all</Button></Link>
                 </div>
               </div>
               {loading ? (
@@ -160,7 +160,7 @@ export default function DashboardPage() {
                   <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[#16A34A]">Appointments</p>
                   <h2 className="text-xl font-semibold text-slate-950 dark:text-white">Your upcoming care</h2>
                 </div>
-                <Button variant="ghost">Book</Button>
+                <Link to="/appointments"><Button variant="ghost">Book</Button></Link>
               </div>
               {loading ? (
                 <div className="space-y-3">

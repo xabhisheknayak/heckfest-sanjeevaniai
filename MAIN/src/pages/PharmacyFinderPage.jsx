@@ -1,12 +1,16 @@
 import { motion } from 'framer-motion'
 import { ArrowRight, MapPin, Pill } from 'lucide-react'
 import { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { SearchBar } from '../components/ui/SearchBar'
+import { Toast } from '../components/ui/Toast'
 
 export default function PharmacyFinderPage() {
+  const navigate = useNavigate()
   const [query, setQuery] = useState('')
+  const [message, setMessage] = useState('')
 
   const filteredPharmacies = useMemo(() => {
     const list = [
@@ -20,6 +24,15 @@ export default function PharmacyFinderPage() {
     )
   }, [query])
 
+  const handleDeliveryClick = () => {
+    setMessage('Same-day prescription delivery is available for all nearby verified pharmacies.')
+    setTimeout(() => setMessage(''), 4000)
+  }
+
+  const handleViewPharmacy = (pharmacy) => {
+    navigate('/maps', { state: { filter: 'pharmacy', search: pharmacy.name } })
+  }
+
   return (
     <div className="min-h-screen bg-[#F8FAFC] px-4 py-8 sm:px-6 lg:px-8 dark:bg-slate-950 dark:text-slate-100">
       <div className="mx-auto max-w-6xl">
@@ -29,13 +42,19 @@ export default function PharmacyFinderPage() {
           <p className="mt-3 max-w-2xl text-slate-600 dark:text-slate-400">Search for pharmacies with stock visibility, delivery availability, and quick pickup options.</p>
         </motion.div>
 
+        {message && (
+          <div className="mb-6">
+            <Toast title="Prescription Delivery" message={message} tone="info" />
+          </div>
+        )}
+
         <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <SearchBar 
             placeholder="Search by medicine or pharmacy" 
             value={query} 
             onChange={(event) => setQuery(event.target.value)} 
           />
-          <Button variant="secondary">Delivery options</Button>
+          <Button variant="secondary" onClick={handleDeliveryClick}>Delivery options</Button>
         </div>
 
         <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
@@ -51,7 +70,7 @@ export default function PharmacyFinderPage() {
               <div className="mt-4 flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
                 <MapPin className="h-4 w-4 text-[#16A34A]" /> {pharmacy.distance}
               </div>
-              <Button className="mt-6 w-full">View pharmacy <ArrowRight className="ml-2 h-4 w-4" /></Button>
+              <Button className="mt-6 w-full" onClick={() => handleViewPharmacy(pharmacy)}>View pharmacy <ArrowRight className="ml-2 h-4 w-4" /></Button>
             </Card>
           ))}
         </div>

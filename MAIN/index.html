@@ -4,17 +4,33 @@
 <head>
   <meta charset="UTF-8" />
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
+  
+  <!-- PWA & Theme Color -->
+  <meta name="theme-color" content="#16A34A" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#020617" media="(prefers-color-scheme: dark)" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="SanjivniAI" />
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.svg" />
+
+  <!-- Font Optimization & Preconnect -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+  <!-- Primary SEO -->
   <meta name="description"
     content="SanjivniAI is a secure clinical digital healthcare platform featuring symptom checkers, medical assistant triaging, and local doctor consultation handoffs." />
   <meta name="keywords"
-    content="AI healthcare assistant, AI symptom checker, digital healthcare platform, medical AI assistant, personal health companion" />
+    content="AI healthcare assistant, AI symptom checker, digital healthcare platform, medical AI assistant, personal health companion, PWA" />
   <title>SanjivniAI | Digital Healthcare Platform</title>
 </head>
 
-<body>
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
   <div id="root"></div>
   <script type="module" src="/src/main.jsx"></script>
 </body>
 
-</html>
+</html>
