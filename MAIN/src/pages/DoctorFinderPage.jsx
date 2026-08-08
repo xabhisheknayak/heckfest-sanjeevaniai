@@ -7,6 +7,7 @@ import { Card } from '../components/ui/Card'
 import { Input } from '../components/ui/Input'
 import { doctors as defaultDoctors } from '../data/doctors'
 import { searchNearbyDoctorsByLocation } from '../lib/maps'
+import { UserRating } from '../components/common/UserRating'
 
 export default function DoctorFinderPage() {
   const navigate = useNavigate()
@@ -236,9 +237,7 @@ export default function DoctorFinderPage() {
                               <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 leading-snug line-clamp-2">{doctor.hospital || doctor.name}</h3>
                               <p className="text-xs text-teal-600 dark:text-teal-400 font-medium mt-0.5">{doctor.specialization}</p>
                             </div>
-                            <span className="rounded-full bg-amber-100 dark:bg-amber-950/40 px-2 py-0.5 text-[11px] font-bold text-amber-700 dark:text-amber-300 shrink-0 flex items-center gap-0.5">
-                              <Star className="h-2.5 w-2.5 fill-amber-500 text-amber-500" /> {doctor.rating}
-                            </span>
+                            <UserRating id={doctor.id} name={doctor.hospital || doctor.name} baseRating={doctor.rating} />
                           </div>
 
                           <div className="mt-3 space-y-1.5 text-xs text-slate-500 dark:text-slate-400">
@@ -335,7 +334,7 @@ export default function DoctorFinderPage() {
                       <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 truncate">{doctor.name}</h3>
                       <p className="text-xs text-teal-600 dark:text-teal-400 font-medium mt-0.5">{doctor.specialization}</p>
                     </div>
-                    <span className="rounded-full bg-amber-100 dark:bg-amber-950/40 px-2 py-0.5 text-[11px] font-bold text-amber-700 dark:text-amber-300 shrink-0">★ {doctor.rating}</span>
+                    <UserRating id={doctor.id} name={doctor.name} baseRating={doctor.rating} />
                   </div>
 
                   <div className="mt-3 space-y-1.5 text-xs text-slate-500 dark:text-slate-400">
