@@ -318,10 +318,10 @@ export default function LandingPage() {
               <p className="mt-4 text-sm leading-relaxed text-emerald-50">Create your account in under 2 minutes, analyze symptoms with Gemini guidance, and organize scheduling.</p>
               <div className="mt-8 flex flex-wrap justify-center gap-4">
                 <Link to="/signup">
-                  <Button className="bg-white text-[#16A34A] hover:bg-slate-50 border-none font-bold px-8 py-4">Create Free Account</Button>
+                  <Button variant="white" className="font-bold px-8 py-4">Create Free Account</Button>
                 </Link>
                 <Link to="/dashboard">
-                  <Button variant="secondary" className="border-white/20 bg-transparent text-white hover:bg-white/10 font-bold px-8 py-4">Explore Demo Hub</Button>
+                  <Button variant="outline-white" className="font-bold px-8 py-4">Explore Demo Hub</Button>
                 </Link>
               </div>
             </div>
