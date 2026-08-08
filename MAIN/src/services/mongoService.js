@@ -150,5 +150,16 @@ export const mongoService = {
       console.warn('mongoService getFullHistory error:', e);
       return null;
     }
+  },
+
+  async fetchNearbyDoctors(location = 'Bengaluru') {
+    try {
+      const res = await fetch(`${API_BASE_URL}/nearby-doctors?location=${encodeURIComponent(location)}`);
+      if (!res.ok) throw new Error('Failed to fetch nearby doctors');
+      return await res.json();
+    } catch (e) {
+      console.warn('mongoService fetchNearbyDoctors error:', e);
+      return null;
+    }
   }
 };
