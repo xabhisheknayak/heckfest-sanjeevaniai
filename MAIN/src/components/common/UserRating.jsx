@@ -25,7 +25,11 @@ function saveRating(id, rating) {
  *   name      - display name (used in confirmation toast)
  *   baseRating - the default/seed rating from the data source
  */
+<<<<<<< HEAD
 export function UserRating({ id, name: _name, baseRating = 4.0 }) {
+=======
+export function UserRating({ id, name, baseRating = 4.0 }) {
+>>>>>>> 10b16c0bf174bcc9b6c1219facfcb3d40d032b00
   const [hovered, setHovered] = useState(null)   // star index user is hovering (1–5)
   const [userRating, setUserRating] = useState(null) // star index user has rated (1–5)
   const [submitted, setSubmitted] = useState(false)
