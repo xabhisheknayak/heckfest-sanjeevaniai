@@ -65,6 +65,22 @@ function generateDynamicQuestions(symptoms = '') {
     ]
   }
 
+  // Skin / Dermatology / Rash
+  if (/skin|rash|itch|redness|hives|swelling|bump|allergy|eczema|spot|lesion|blister/i.test(text)) {
+    return [
+      { id: 1, question: "Where on your body is the skin issue located?", options: ["Face / Neck", "Arms / Hands", "Legs / Feet", "Torso / Back", "Widespread / Whole body"] },
+      { id: 2, question: "How long have you noticed these skin changes?", options: ["Less than 24 hours", "1–3 days", "4–7 days", "More than a week"] },
+      { id: 3, question: "How would you describe the main sensation?", options: ["Intense itching", "Burning / Painful", "Tender to touch", "No pain or itching"] },
+      { id: 4, question: "What does the skin appearance look like?", options: ["Red flat spots / Rash", "Raised bumps / Hives", "Fluid-filled blisters", "Dry, scaly patches"] },
+      { id: 5, question: "Is the rash spreading or staying in the same area?", options: ["Spreading rapidly", "Spreading slowly", "Staying localized", "Fading / Improving"] },
+      { id: 6, question: "Have you been exposed to new soaps, detergents, cosmetics, or plants recently?", options: ["Yes, new product exposure", "Outdoors / Plant exposure", "No known new exposure"] },
+      { id: 7, question: "Do you have a fever or general weakness accompanying the skin changes?", options: ["Yes, fever over 100°F", "Mild warmth / Fatigue", "No fever or chills"] },
+      { id: 8, question: "Have you started any new prescription or OTC medications recently?", options: ["Yes, started new medication", "No new medications"] },
+      { id: 9, question: "Do you have a history of allergies, eczema, or sensitive skin?", options: ["Yes, history of eczema/allergies", "No known skin conditions", "Uncertain"] },
+      { id: 10, question: "Have you noticed any facial, lip, or eyelid swelling, or difficulty breathing?", options: ["Yes (Requires urgent evaluation)", "Mild facial swelling", "No swelling or breathing issues"] }
+    ]
+  }
+
   // Default / General Intake Questions dynamically tailored
   const cleaned = symptoms.trim().slice(0, 35) || 'reported symptoms'
   return [

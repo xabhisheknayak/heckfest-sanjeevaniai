@@ -2,7 +2,7 @@ import { initializeApp } from 'firebase/app'
 import { getAuth } from 'firebase/auth'
 import { getFirestore } from 'firebase/firestore'
 
-const env = import.meta.env
+const env = (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env : {}
 const apiKey = env.VITE_FIREBASE_API_KEY
 
 export const isDemoMode = !apiKey || apiKey === 'demo-api-key' || apiKey.length < 10

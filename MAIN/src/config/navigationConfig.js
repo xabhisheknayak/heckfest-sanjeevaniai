@@ -1,4 +1,4 @@
-import { Activity, CalendarDays, Camera, HeartPulse, Home, Hospital, Pill, Settings, Shield, Stethoscope, UserCircle2, FileText } from 'lucide-react'
+import { Activity, CalendarDays, Camera, HeartPulse, Home, Hospital, Pill, Settings, Shield, Stethoscope, UserCircle2, FileText, MessageSquare } from 'lucide-react'
 import { USER_ROLES } from '../constants/roles'
 
 export function getNavigationForRole(role) {
@@ -12,6 +12,7 @@ export function getNavigationForRole(role) {
         mainDashboardPath: '/doctor/dashboard',
         sidebarLinks: [
           { to: '/doctor/dashboard', label: 'Clinical Overview', icon: Home },
+          { to: '/doctor/chat', label: '💬 My Patients', icon: MessageSquare },
           { to: '/appointments', label: 'Patient Consultations', icon: CalendarDays },
           { to: '/medical-history', label: 'Patient Records', icon: Activity },
           { to: '/profile', label: 'Practitioner Profile', icon: UserCircle2 },
@@ -19,6 +20,7 @@ export function getNavigationForRole(role) {
         ],
         navbarLinks: [
           { to: '/doctor/dashboard', label: 'Clinical Hub' },
+          { to: '/doctor/chat', label: '💬 My Patients' },
           { to: '/appointments', label: 'Consultations' },
           { to: '/medical-history', label: 'Patient Records' },
         ]
@@ -54,6 +56,7 @@ export function getNavigationForRole(role) {
         mainDashboardPath: '/dashboard',
         sidebarLinks: [
           { to: '/dashboard', label: 'Dashboard', icon: Home },
+          { to: '/chat', label: '💬 My Doctors', icon: MessageSquare },
           { to: '/symptom-checker', label: 'Symptom Checker', icon: HeartPulse },
           { to: '/image-analysis', label: 'Image Analysis', icon: Camera },
           { to: '/doctor-finder', label: 'Find Doctor', icon: Hospital },
@@ -66,6 +69,7 @@ export function getNavigationForRole(role) {
         navbarLinks: [
           { to: '/', label: 'Home' },
           { to: '/dashboard', label: 'Dashboard' },
+          { to: '/chat', label: '💬 My Doctors' },
           { to: '/symptom-checker', label: 'Symptom Checker' },
           { to: '/doctor-finder', label: 'Doctors' },
         ]

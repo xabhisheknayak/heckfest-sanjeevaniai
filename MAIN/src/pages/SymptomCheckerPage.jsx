@@ -9,6 +9,7 @@ import { Toast } from '../components/ui/Toast'
 import { generateSymptomQuestions, analyzeSymptoms, analyzeImage } from '../lib/gemini'
 import { useAuth } from '../hooks/useAuth'
 import { firestoreService } from '../services/firestoreService'
+import { chatService } from '../services/chatService'
 
 export default function SymptomCheckerPage() {
   const { user, profile } = useAuth()
@@ -211,6 +212,9 @@ export default function SymptomCheckerPage() {
       setIsHighRiskWarning(hasHighRiskAnswers)
       setStep('results')
 
+      // Update patient consultation report & notify doctor if information was updated after review
+      chatService.updatePatientReportAnswers(user?.uid || 'pat-101', answers, symptoms)
+
       // Save combined record to Firestore / LocalStorage
       if (user) {
         const combinedPayload = {
@@ -368,16 +372,21 @@ Please review the information and provide medical guidance.
 SanjivniAI`
   }
 
-  // Open Pre-filled WhatsApp Window
+  // Open Pre-filled WhatsApp Window & Trigger Report PDF Generation
   const handleConfirmOpenWhatsApp = () => {
     const phone = '917903119301'
     const messageText = formatWhatsAppMessage()
     const waUrl = `https://wa.me/${phone}?text=${encodeURIComponent(messageText)}`
 
+    // Open WhatsApp Click-to-Chat window
     window.open(waUrl, '_blank')
     setShowWhatsAppConfirmModal(false)
-    setToastMessage('WhatsApp consultation opened.')
-    setTimeout(() => setToastMessage(''), 4000)
+
+    // Trigger PDF printable download window
+    handleDownloadReport()
+
+    setToastMessage('📄 Consultation Report PDF generated & WhatsApp opened for +91 7903119301!')
+    setTimeout(() => setToastMessage(''), 5000)
   }
 
   // Handle Share With Doctor Execution
@@ -543,7 +552,9 @@ SanjivniAI`
                   style={{ width: `${progressPercent}%` }}
                 />
               </div>
-              <p className="text-[11px] text-right font-semibold text-slate-500 mt-1">Progress: {progressPercent}%</p>
+              <p className="text-[11px] text-right font-mono font-semibold text-emerald-700 dark:text-emerald-400 mt-1">
+                Progress: {'█'.repeat(Math.max(1, Math.round((progressPercent / 100) * 10))) + '░'.repeat(10 - Math.max(1, Math.round((progressPercent / 100) * 10)))} {progressPercent}%
+              </p>
             </div>
 
             <div className="my-6 space-y-4">
@@ -770,9 +781,9 @@ SanjivniAI`
                   </div>
                   <div>
                     <h2 className="text-xl font-black tracking-tight text-slate-900 dark:text-white uppercase">
-                      SANJIVNIAI PRELIMINARY HEALTH REPORT
+                      SANJIVNIAI DETAILED PATIENT CONSULTATION REPORT
                     </h2>
-                    <p className="text-xs text-slate-500 font-medium">Combined intake synthesis: Symptoms + Questionnaire + Image Analysis</p>
+                    <p className="text-xs text-slate-500 font-medium">Combined intake synthesis: Symptoms + Dynamic AI Questionnaire + Image Analysis</p>
                   </div>
                 </div>
 
@@ -789,7 +800,7 @@ SanjivniAI`
                 </div>
               </div>
 
-              {/* REPORT SECTIONS 1 to 5: PATIENT METADATA & INTAKE */}
+              {/* REPORT SECTIONS 1 to 6: PATIENT METADATA & COMPLAINT */}
               <div className="grid gap-4 sm:grid-cols-2 text-xs">
                 <div className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-1">
                   <p className="font-bold text-slate-500 uppercase tracking-wider text-[10px]">1. Patient Information</p>
@@ -798,196 +809,244 @@ SanjivniAI`
                     {profile?.name || user?.email || 'Anonymous Patient'}
                   </p>
                   <p className="text-slate-500">Age: <span className="font-semibold text-slate-700 dark:text-slate-300">Not provided</span></p>
+                  <p className="text-slate-500">Gender: <span className="font-semibold text-slate-700 dark:text-slate-300">Not provided</span></p>
+                  <p className="text-slate-500 text-[11px] mt-1">Generated: {reportTimestamp}</p>
                 </div>
 
                 <div className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-1">
-                  <p className="font-bold text-slate-500 uppercase tracking-wider text-[10px]">2. Report Date & Time</p>
-                  <p className="font-bold text-slate-900 dark:text-white text-sm flex items-center gap-1.5">
-                    <Clock className="h-4 w-4 text-emerald-600" />
-                    {reportTimestamp}
+                  <p className="font-bold text-slate-500 uppercase tracking-wider text-[10px]">2. Original Complaint</p>
+                  <p className="font-bold text-slate-900 dark:text-white text-sm">"{symptoms}"</p>
+                  <p className="text-slate-500 text-[11px]">Primary patient complaint entered at intake start</p>
+                </div>
+
+                <div className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-1">
+                  <p className="font-bold text-slate-500 uppercase tracking-wider text-[10px]">3. Reported Symptoms</p>
+                  <p className="font-semibold text-slate-800 dark:text-slate-200">{symptoms}</p>
+                  {medications && (
+                    <p className="text-slate-500 text-[11px]">Current Medications: <span className="font-semibold">{medications}</span></p>
+                  )}
+                </div>
+
+                <div className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-1">
+                  <p className="font-bold text-slate-500 uppercase tracking-wider text-[10px]">4. Duration</p>
+                  <p className="font-bold text-slate-900 dark:text-white text-sm">
+                    {Object.entries(answers).find(([qId, ans]) => {
+                      const qObj = questions.find(q => q.id === Number(qId))
+                      return /how long|duration|days|hours/i.test(qObj?.question || '')
+                    })?.[1] || duration || 'Not provided'}
                   </p>
-                  <p className="text-slate-500">Status: <span className="font-semibold text-emerald-600">Generated & Saved</span></p>
                 </div>
 
                 <div className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-1">
-                  <p className="font-bold text-slate-500 uppercase tracking-wider text-[10px]">3. Primary Reported Symptoms</p>
-                  <p className="font-semibold text-slate-800 dark:text-slate-200">"{symptoms}"</p>
-                </div>
-
-                <div className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-1">
-                  <p className="font-bold text-slate-500 uppercase tracking-wider text-[10px]">4. Symptom Duration & Medications</p>
-                  <p className="text-slate-700 dark:text-slate-300">
-                    Duration: <span className="font-semibold">{duration || 'Not provided'}</span>
+                  <p className="font-bold text-slate-500 uppercase tracking-wider text-[10px]">5. Severity</p>
+                  <p className={`text-base font-black uppercase ${
+                    result.severity === 'high' ? 'text-red-600' : result.severity === 'medium' ? 'text-amber-600' : 'text-emerald-600'
+                  }`}>
+                    {Object.entries(answers).find(([qId, ans]) => {
+                      const qObj = questions.find(q => q.id === Number(qId))
+                      return /rate|discomfort|severity|pain/i.test(qObj?.question || '')
+                    })?.[1] || result.severity || 'Low'}
                   </p>
-                  <p className="text-slate-700 dark:text-slate-300">
-                    Recent Medications: <span className="font-semibold">{medications || 'Not provided'}</span>
+                </div>
+
+                <div className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-1">
+                  <p className="font-bold text-slate-500 uppercase tracking-wider text-[10px]">6. Progression</p>
+                  <p className="font-bold text-slate-900 dark:text-white text-sm">
+                    {Object.entries(answers).find(([qId, ans]) => {
+                      const qObj = questions.find(q => q.id === Number(qId))
+                      return /progress|worsening|improving|same/i.test(qObj?.question || '')
+                    })?.[1] || 'Not provided'}
                   </p>
                 </div>
               </div>
 
-              {/* REPORT SECTION 5: QUESTIONNAIRE RESPONSES */}
-              <div className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-2 text-xs">
-                <p className="font-bold text-slate-500 uppercase tracking-wider text-[10px]">5. Patient Questionnaire Responses (10 Intake Questions)</p>
-                <div className="grid gap-2 sm:grid-cols-2">
+              {/* REPORT SECTIONS 4 & 5: COMPLETE QUESTIONNAIRE & EVERY ANSWER */}
+              <div className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-3 text-xs">
+                <p className="font-bold text-slate-500 uppercase tracking-wider text-[10px]">4 & 5. Complete Questionnaire & Every Answer ({questions.length} Questions)</p>
+                <div className="grid gap-2.5 sm:grid-cols-2">
                   {questions.map((q, i) => (
-                    <div key={q.id} className="rounded-xl bg-white p-2.5 dark:bg-slate-900 border text-[11px]">
-                      <p className="font-semibold text-slate-800 dark:text-slate-200">Q{i + 1}: {q.question}</p>
-                      <p className="font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">Answer: "{answers[q.id] || 'Not provided'}"</p>
+                    <div key={q.id} className="rounded-xl bg-white p-3 dark:bg-slate-900 border text-[11px] space-y-1">
+                      <p className="font-bold text-slate-800 dark:text-slate-200">Q{i + 1}: {q.question}</p>
+                      <p className="font-bold text-emerald-600 dark:text-emerald-400">Answer: "{answers[q.id] || 'Not provided'}"</p>
                     </div>
                   ))}
                 </div>
               </div>
 
-              {/* COMBINED REPORT SECTION: IMAGE ANALYSIS */}
+              {/* REPORT SECTION 6: QUESTIONNAIRE SUMMARY */}
+              <div className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-2 text-xs">
+                <p className="font-bold text-slate-500 uppercase tracking-wider text-[10px]">6. Questionnaire Summary</p>
+                <p className="text-slate-700 dark:text-slate-300 leading-relaxed">
+                  Patient completed a total of <span className="font-bold">{questions.length} dynamic AI follow-up questions</span> tailored specifically to their primary complaint ("{symptoms}"). All responses have been logged into the consultation file.
+                </p>
+              </div>
+
+              {/* REPORT SECTION 7: IMAGE */}
               <div className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-3 text-xs">
                 <p className="font-bold text-slate-500 uppercase tracking-wider text-[10px] flex items-center gap-1.5">
                   <ImageIcon className="h-4 w-4 text-emerald-600" />
-                  IMAGE ANALYSIS
+                  7. Image
                 </p>
 
-                {imageBase64 ? (
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-3">
-                      {imagePreview && (
-                        <img src={imagePreview} alt="Uploaded Visual Thumbnail" className="h-16 w-16 object-cover rounded-xl border shadow-sm" />
-                      )}
-                      <div>
-                        <p className="font-bold text-slate-900 dark:text-white">Image uploaded: <span className="text-emerald-600">Yes ({imageFile?.name})</span></p>
-                        <p className="text-slate-500 text-[11px]">Visual analysis synthesized into clinical intake protocol</p>
-                      </div>
+                {imagePreview ? (
+                  <div className="flex items-center gap-3">
+                    <img src={imagePreview} alt="Uploaded Visual Thumbnail" className="h-20 w-20 object-cover rounded-xl border shadow-sm" />
+                    <div>
+                      <p className="font-bold text-slate-900 dark:text-white">Image Uploaded: <span className="text-emerald-600">Yes ({imageFile?.name || 'Visual File'})</span></p>
+                      <p className="text-slate-500 text-[11px]">Size: {(imageFile?.size ? (imageFile.size / 1024).toFixed(1) : '0')} KB</p>
                     </div>
-
-                    {imageError ? (
-                      <div className="rounded-xl border border-red-300 bg-red-50 p-3 text-red-800 dark:border-red-900 dark:bg-red-950/40">
-                        {imageError}
-                      </div>
-                    ) : imageAnalysisResult ? (
-                      <div className="rounded-xl bg-white p-3.5 dark:bg-slate-900 border space-y-2">
-                        <p className="font-bold text-slate-800 dark:text-slate-200">AI Visual Observations:</p>
-                        <p className="text-slate-600 dark:text-slate-400 leading-relaxed">{imageAnalysisResult.observations}</p>
-
-                        {imageAnalysisResult.possibleIssues && (
-                          <div>
-                            <p className="font-bold text-slate-800 dark:text-slate-200 mt-2">Possible Visual Issues Identified:</p>
-                            <ul className="list-disc pl-4 text-slate-600 dark:text-slate-400">
-                              {imageAnalysisResult.possibleIssues.map((issue, idx) => (
-                                <li key={idx}>{issue}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-
-                        <p className="text-[11px] text-slate-400 italic pt-1 border-t dark:border-slate-800">
-                          Preliminary AI image analysis — This analysis is not a medical diagnosis and should be reviewed by a qualified healthcare professional.
-                        </p>
-                      </div>
-                    ) : (
-                      <p className="text-slate-500 italic">Processing visual intake...</p>
-                    )}
                   </div>
                 ) : (
-                  <p className="text-slate-500 italic">Image uploaded: <span className="font-semibold">No (Optional step skipped)</span></p>
+                  <p className="text-slate-600 dark:text-slate-400 font-semibold italic">No image provided.</p>
                 )}
               </div>
 
-              {/* REPORT SECTIONS 6 to 11: CLINICAL ANALYSIS */}
-              <div className="grid gap-4 sm:grid-cols-2 text-xs">
-                {/* 8. Severity / Urgency */}
-                <div className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
-                  <p className="font-bold text-slate-500 uppercase tracking-wider text-[10px]">8. Severity & Urgency Assessment</p>
-                  <p className={`text-xl font-black mt-1 uppercase ${
-                    result.severity === 'high' ? 'text-red-600' : result.severity === 'medium' ? 'text-amber-600' : 'text-emerald-600'
-                  }`}>
-                    {result.severity || 'Low'}
-                  </p>
-                  <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 mt-1">{result.urgency || 'Routine clinical consultation'}</p>
-                </div>
+              {/* REPORT SECTION 8: IMAGE ANALYSIS */}
+              <div className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-3 text-xs">
+                <p className="font-bold text-slate-500 uppercase tracking-wider text-[10px]">8. Image Analysis</p>
 
-                {/* 10. Recommended Specialist */}
-                <div className="rounded-2xl bg-emerald-50/70 p-4 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900">
-                  <p className="font-bold text-emerald-900 dark:text-emerald-300 uppercase tracking-wider text-[10px]">10. Recommended Medical Specialist</p>
-                  <p className="text-base font-bold text-emerald-800 dark:text-emerald-200 mt-1">{result.recommended_specialist || 'General Practitioner'}</p>
-                </div>
+                {!imageBase64 ? (
+                  <p className="text-slate-600 dark:text-slate-400 font-semibold italic">No image provided.</p>
+                ) : imageError ? (
+                  <div className="rounded-xl border border-red-300 bg-red-50 p-3 text-red-800 dark:border-red-900 dark:bg-red-950/40 font-semibold">
+                    Image analysis is currently unavailable.
+                  </div>
+                ) : imageAnalysisResult ? (
+                  <div className="rounded-xl bg-white p-3.5 dark:bg-slate-900 border space-y-2">
+                    <p className="font-bold text-slate-800 dark:text-slate-200">AI Preliminary Observations:</p>
+                    <p className="text-slate-600 dark:text-slate-400 leading-relaxed">{imageAnalysisResult.observations}</p>
+
+                    {imageAnalysisResult.possibleIssues && (
+                      <div>
+                        <p className="font-bold text-slate-800 dark:text-slate-200 mt-2">Possible Visual Issues Identified:</p>
+                        <ul className="list-disc pl-4 text-slate-600 dark:text-slate-400">
+                          {imageAnalysisResult.possibleIssues.map((issue, idx) => (
+                            <li key={idx}>{issue}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    <p className="text-[11px] text-emerald-800 dark:text-emerald-300 font-semibold pt-1 border-t dark:border-slate-800">
+                      Preliminary AI image analysis. This is not a definitive medical diagnosis.
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-slate-500 italic">Processing image analysis...</p>
+                )}
               </div>
 
-              {/* 7. Possible Conditions to Discuss */}
-              {result.possible_conditions && (
-                <div className="space-y-2 text-xs">
-                  <p className="font-bold text-slate-500 uppercase tracking-wider text-[10px]">7. Possible Conditions to Discuss With Doctor</p>
+              {/* REPORT SECTIONS 9 to 13: CLINICAL ANALYSIS & RECOMMENDATIONS */}
+              <div className="space-y-4 text-xs">
+                {/* 9. AI Preliminary Analysis */}
+                <div className="rounded-2xl bg-emerald-50/70 p-4 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900 space-y-2">
+                  <p className="font-bold text-emerald-900 dark:text-emerald-300 uppercase tracking-wider text-[10px]">9. AI Preliminary Analysis</p>
+                  <p className="text-[11px] text-emerald-800 dark:text-emerald-400 italic mb-1">
+                    Possible conditions/topics to discuss with a qualified healthcare professional:
+                  </p>
                   <div className="flex flex-wrap gap-2">
-                    {result.possible_conditions.map((cond, i) => (
-                      <span key={i} className="rounded-xl bg-emerald-100 px-3 py-1.5 text-xs font-bold text-emerald-900 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
-                        {cond}
+                    {result.possible_conditions?.map((cond, i) => (
+                      <span key={i} className="rounded-xl bg-white dark:bg-slate-900 px-3 py-1.5 text-xs font-bold text-emerald-900 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 shadow-sm">
+                        • {cond}
                       </span>
-                    ))}
+                    )) || <span className="font-semibold text-slate-600">Primary symptomatic evaluation</span>}
                   </div>
                 </div>
-              )}
 
-              {/* 9. Warning Signs */}
-              {result.warning_signs && (
-                <div className="rounded-2xl bg-amber-50/70 p-4 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900 text-xs">
-                  <p className="font-bold text-amber-900 dark:text-amber-300 uppercase tracking-wider text-[10px] mb-1">9. Warning Signs & Clinical Indicators</p>
+                {/* 10. Warning Signs */}
+                <div className="rounded-2xl bg-amber-50/70 p-4 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900">
+                  <p className="font-bold text-amber-900 dark:text-amber-300 uppercase tracking-wider text-[10px] mb-1.5">10. Warning Signs</p>
                   <ul className="list-disc pl-4 text-amber-800 dark:text-amber-400 space-y-0.5">
-                    {result.warning_signs.map((sign, i) => (
+                    {result.warning_signs?.map((sign, i) => (
                       <li key={i}>{sign}</li>
-                    ))}
+                    )) || <li>High persistent fever, difficulty breathing, or sudden intense pain require immediate clinical evaluation.</li>}
                   </ul>
                 </div>
-              )}
 
-              {/* 11. Suggested Next Steps */}
-              {result.advice && (
-                <div className="space-y-2 text-xs">
-                  <p className="font-bold text-slate-500 uppercase tracking-wider text-[10px]">11. Suggested Next Steps & Supportive Care</p>
-                  <ul className="space-y-1.5 text-slate-700 dark:text-slate-300">
-                    {result.advice.map((item, i) => (
-                      <li key={i} className="flex items-start gap-2">
-                        <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
-                        <span>{item}</span>
-                      </li>
-                    ))}
-                    <li className="flex items-start gap-2 italic text-slate-500">
-                      <ShieldCheck className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
-                      <span>Note: A qualified doctor should determine whether medication or diagnostic testing is appropriate.</span>
-                    </li>
-                  </ul>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {/* 11. AI-Assisted Urgency */}
+                  <div className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
+                    <p className="font-bold text-slate-500 uppercase tracking-wider text-[10px]">11. AI-Assisted Urgency</p>
+                    <p className="text-sm font-bold text-slate-800 dark:text-slate-200 mt-1">{result.urgency || 'Routine clinical consultation'}</p>
+                  </div>
+
+                  {/* 12. Recommended Specialist */}
+                  <div className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
+                    <p className="font-bold text-slate-500 uppercase tracking-wider text-[10px]">12. Recommended Specialist</p>
+                    <p className="text-sm font-bold text-emerald-700 dark:text-emerald-300 mt-1">{result.recommended_specialist || 'General Practitioner'}</p>
+                  </div>
                 </div>
-              )}
 
-              {/* 12. AI Disclaimer */}
-              <div className="border-t pt-4 text-[11px] text-slate-400 italic">
-                {result.disclaimer || 'AI assistance only, not medical diagnosis. Verify before making clinical decisions.'}
+                {/* 13. Disclaimer */}
+                <div className="rounded-2xl border border-slate-200 bg-slate-100 p-4 text-[11px] font-semibold text-slate-600 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-400 italic">
+                  13. Disclaimer: AI-generated preliminary assistance. A qualified healthcare professional must review this information. This is not a medical diagnosis and should not replace professional clinical evaluation or treatment.
+                </div>
               </div>
 
-              {/* DEMO DOCTOR WHATSAPP CONSULTATION CARD */}
-              <div className="rounded-3xl border-2 border-emerald-500 bg-[#F0FDF4] p-5 dark:border-emerald-600 dark:bg-emerald-950/40 shadow-sm space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <div className="rounded-2xl bg-emerald-600 p-2 text-white">
-                      <MessageSquare className="h-5 w-5" />
-                    </div>
+              {/* DUAL COMMUNICATION CONSULT A DOCTOR SECTION */}
+              <div className="rounded-3xl border-2 border-emerald-500 bg-[#F0FDF4] p-5 dark:border-emerald-600 dark:bg-emerald-950/40 shadow-sm space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-emerald-200 dark:border-emerald-900 pb-3">
+                  <div>
+                    <h3 className="font-black text-base text-emerald-950 dark:text-emerald-100 flex items-center gap-2">
+                      👨‍⚕️ CONSULT A DOCTOR
+                    </h3>
+                    <p className="text-xs text-emerald-800 dark:text-emerald-300 mt-0.5">
+                      Your detailed health report is ready. Choose your preferred communication method:
+                    </p>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setShowFullReportModal(true)}
+                    className="text-xs py-1.5 px-3 border-emerald-400 text-emerald-900 dark:text-emerald-100 font-bold self-start sm:self-auto"
+                  >
+                    <Eye className="h-3.5 w-3.5 mr-1" /> [ 📋 VIEW DETAILED REPORT ]
+                  </Button>
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {/* OPTION 1: IN-APP CHAT WITH DOCTOR */}
+                  <div className="rounded-2xl border-2 border-emerald-600 bg-white p-4 dark:bg-slate-900 space-y-3 shadow-sm flex flex-col justify-between">
                     <div>
-                      <h3 className="font-bold text-sm text-emerald-950 dark:text-emerald-100 flex items-center gap-1.5">
-                        👨‍⚕️ DEMO DOCTOR CONSULTATION
-                      </h3>
-                      <p className="text-[11px] text-emerald-800 dark:text-emerald-300">
-                        Doctor: <span className="font-bold">SanjivniAI Demo Doctor</span> • Contact: <span className="font-bold">WhatsApp (+91 7903119301)</span>
+                      <div className="flex items-center gap-2 mb-1">
+                        <div className="rounded-xl bg-emerald-100 p-2 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+                          <MessageSquare className="h-5 w-5" />
+                        </div>
+                        <h4 className="font-bold text-sm text-slate-900 dark:text-white uppercase">💬 CHAT WITH DOCTOR</h4>
+                      </div>
+                      <p className="text-xs text-slate-600 dark:text-slate-300">
+                        Real-time encrypted SanjivniAI consultation messaging with assigned doctors.
                       </p>
                     </div>
+                    <Link
+                      to="/chat"
+                      className="w-full text-center py-2.5 rounded-xl text-xs font-bold gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow transition inline-flex items-center justify-center"
+                    >
+                      <MessageSquare className="h-4 w-4" /> [ START CHAT ]
+                    </Link>
+                  </div>
+
+                  {/* OPTION 2: EXTERNAL WHATSAPP CONSULTATION */}
+                  <div className="rounded-2xl border-2 border-[#25D366] bg-white p-4 dark:bg-slate-900 space-y-3 shadow-sm flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <div className="rounded-xl bg-emerald-100 p-2 text-[#25D366] dark:bg-emerald-950">
+                          <Phone className="h-5 w-5" />
+                        </div>
+                        <h4 className="font-bold text-sm text-slate-900 dark:text-white uppercase">📱 WHATSAPP</h4>
+                      </div>
+                      <p className="text-xs text-slate-600 dark:text-slate-300">
+                        Open external pre-filled WhatsApp consultation (+91 7903119301).
+                      </p>
+                    </div>
+                    <Button
+                      onClick={() => setShowWhatsAppConfirmModal(true)}
+                      className="w-full py-2.5 text-xs font-bold gap-2 bg-[#25D366] hover:bg-[#20bd5a] text-white shadow"
+                    >
+                      <MessageSquare className="h-4 w-4" /> [ OPEN WHATSAPP ]
+                    </Button>
                   </div>
                 </div>
-
-                <p className="text-xs text-emerald-800 dark:text-emerald-200">
-                  Open a pre-filled WhatsApp consultation message directly with the SanjivniAI Demo Doctor.
-                </p>
-
-                <Button
-                  onClick={() => setShowWhatsAppConfirmModal(true)}
-                  className="w-full py-2.5 text-xs font-bold gap-2 bg-[#25D366] hover:bg-[#20bd5a] text-white shadow"
-                >
-                  <MessageSquare className="h-4 w-4" /> [ SEND REPORT ON WHATSAPP ]
-                </Button>
               </div>
 
               {/* REPORT ACTION BUTTONS */}
@@ -1004,8 +1063,8 @@ SanjivniAI`
                   <Share2 className="h-4 w-4 text-purple-600" /> [ SHARE WITH DOCTOR ]
                 </Button>
 
-                <Link to="/booking" className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-emerald-700 transition">
-                  <Calendar className="h-4 w-4" /> [ START DOCTOR CONSULTATION ]
+                <Link to="/appointments" className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-emerald-700 transition">
+                  <Calendar className="h-4 w-4" /> [ BOOK APPOINTMENT ]
                 </Link>
               </div>
             </Card>
