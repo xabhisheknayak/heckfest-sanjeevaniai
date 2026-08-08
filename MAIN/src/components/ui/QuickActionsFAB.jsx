@@ -67,7 +67,7 @@ export function QuickActionsFAB() {
                 <Link
                   to={item.to}
                   onClick={() => setIsOpen(false)}
-                  className={`h-11 w-11 rounded-full shadow-lg flex items-center justify-center transition-transform hover:scale-115 active:scale-95 ${item.color}`}
+                  className={`h-11 w-11 rounded-full shadow-lg flex items-center justify-center transition-transform hover:scale-110 active:scale-95 ${item.color}`}
                   aria-label={item.label}
                 >
                   {item.icon}

@@ -17,9 +17,9 @@ export function RoleProtectedRoute({ children, allowedRoles }) {
 
     let targetDashboard = '/dashboard'
     if (role === USER_ROLES.DOCTOR) {
-      targetDashboard = '/doctor/dashboard'
+      targetDashboard = '/doctor'
     } else if (role === USER_ROLES.ADMIN) {
-      targetDashboard = '/admin/dashboard'
+      targetDashboard = '/admin'
     }
 
     return (
