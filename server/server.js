@@ -39,18 +39,18 @@ function getDemoClient(userId) {
   if (!memoryDB.clients[userId]) {
     memoryDB.clients[userId] = {
       userId,
-      fullName: 'Alex Morgan',
-      email: 'alex.morgan@example.com',
+      fullName: 'Aarav Sharma',
+      email: 'aarav.sharma@example.com',
       age: 32,
       gender: 'Male',
       bloodGroup: 'O+',
       heightCm: 178,
       weightKg: 74,
-      phone: '+1 (555) 349-9021',
-      emergencyContact: 'Sarah Morgan (+1 555-901-2289)',
+      phone: '+91 98765 43210',
+      emergencyContact: 'Sunita Sharma (+91 98765 12345)',
       allergies: ['Penicillin', 'Peanuts', 'Dust Mites'],
       chronicConditions: ['Mild Seasonal Asthma', 'Hypertension (Controlled)'],
-      address: '742 Evergreen Terrace, Springfield, CA',
+      address: '42, MG Road, Indiranagar, Bengaluru, Karnataka, 560038',
       updatedAt: new Date().toISOString()
     };
   }
@@ -107,29 +107,29 @@ function getDemoDoctorConsultations(userId) {
       {
         _id: 'consult-1',
         userId,
-        doctorName: 'Dr. Evelyn Vance, MD',
+        doctorName: 'Dr. Ananya Roy, MD',
         specialization: 'Pulmonology & Respiratory Health',
-        clinicHospital: 'Sanjivni Pulmonology Specialty Clinic',
+        clinicHospital: 'Sanjeevani Specialty Hospital, Bengaluru',
         consultationDate: '2024-11-12',
         chiefComplaint: 'Follow-up on post-bronchitis wheezing and exercise chest tightness.',
         diagnosis: 'Post-viral bronchial hyper-responsiveness.',
         prescriptions: ['Budesonide 200mcg inhaler twice daily', 'Montelukast 10mg at bedtime'],
         followUpDate: '2025-02-15',
-        consultationFee: '$120',
+        consultationFee: '₹1,000',
         notes: 'Spirometry test shows normal FEV1. Inhaler dosage adjusted.'
       },
       {
         _id: 'consult-2',
         userId,
-        doctorName: 'Dr. Marcus Sterling, FACC',
+        doctorName: 'Dr. Vikram Patel, FACC',
         specialization: 'Cardiology & Preventive Medicine',
-        clinicHospital: 'City General Heart Institute',
+        clinicHospital: 'City Care Heart Institute, Bengaluru',
         consultationDate: '2024-06-20',
         chiefComplaint: 'Annual cardiovascular checkup & BP monitoring review.',
         diagnosis: 'Essential Hypertension (Well controlled).',
         prescriptions: ['Telmisartan 40mg daily morning'],
         followUpDate: '2024-12-20',
-        consultationFee: '$150',
+        consultationFee: '₹1,500',
         notes: 'ECG normal sinus rhythm. Lipid panel within target range.'
       }
     ];

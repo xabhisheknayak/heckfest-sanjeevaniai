@@ -476,7 +476,7 @@ export default function MedicalHistoryPage() {
                 <div>
                   <div className="flex items-center gap-3">
                     <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-                      {clientProfile?.fullName || 'Alex Morgan'}
+                      {clientProfile?.fullName || 'Aarav Sharma'}
                     </h2>
                     <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-teal-50 text-teal-700 border border-teal-200 dark:bg-teal-950/40 dark:text-teal-400 dark:border-teal-800">
                       Client ID: #{userId.substring(0, 8)}
@@ -494,7 +494,7 @@ export default function MedicalHistoryPage() {
                     <span className="flex items-center gap-1"><Droplet className="h-3.5 w-3.5 text-red-500" /> Blood Group: <strong>{clientProfile?.bloodGroup || 'O+'}</strong></span>
                     <span className="flex items-center gap-1"><Ruler className="h-3.5 w-3.5 text-blue-500" /> {clientProfile?.heightCm || 178} cm</span>
                     <span className="flex items-center gap-1"><Weight className="h-3.5 w-3.5 text-amber-500" /> {clientProfile?.weightKg || 74} kg</span>
-                    <span className="flex items-center gap-1"><Phone className="h-3.5 w-3.5 text-slate-400" /> {clientProfile?.phone || '+1 (555) 349-9021'}</span>
+                    <span className="flex items-center gap-1"><Phone className="h-3.5 w-3.5 text-slate-400" /> {clientProfile?.phone || '+91 98765 43210'}</span>
                   </div>
 
                   {/* Allergies & Chronic Conditions */}
