@@ -373,7 +373,7 @@ export default function PharmacyFinderPage() {
                           </div>
                         </div>
 
-                        <div className="mt-auto pt-3 mt-3 border-t border-slate-100 dark:border-slate-800 flex gap-2">
+                        <div className="mt-auto pt-3 border-t border-slate-100 dark:border-slate-800 flex gap-2">
                           <a
                             href={pharmacy.googleMapLink}
                             target="_blank"

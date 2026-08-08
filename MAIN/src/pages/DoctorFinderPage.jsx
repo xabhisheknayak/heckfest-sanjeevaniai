@@ -264,7 +264,7 @@ export default function DoctorFinderPage() {
                             </div>
                           </div>
 
-                          <div className="mt-auto pt-3 mt-3 border-t border-slate-100 dark:border-slate-800 flex gap-2">
+                          <div className="mt-auto pt-3 border-t border-slate-100 dark:border-slate-800 flex gap-2">
                             <a
                               href={doctor.googleMapLink || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent((doctor.hospital || doctor.name) + ' ' + (doctor.address || activeLocation))}`}
                               target="_blank"
