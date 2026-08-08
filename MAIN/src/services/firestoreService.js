@@ -1,5 +1,5 @@
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore'
-import { db, isDemoMode } from '../lib/firebase'
+import { db, isDemoMode } from '../lib/firebase.js'
 
 const DEMO_STORAGE_PREFIX = 'sanjivni-demo-db-'
 

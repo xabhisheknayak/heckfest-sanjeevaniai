@@ -12,6 +12,8 @@ import { analyzePatientSummary, generatePrescriptionDraft } from '../lib/gemini'
 
 import { DoctorAIAssistant } from '../components/common/DoctorAIAssistant'
 
+import { DoctorMedicationTrackerWidget } from '../components/doctor/DoctorMedicationTrackerWidget'
+
 export default function DoctorDashboardPage() {
   const routerLocation = useLocation()
   const { profile } = useAuth()
@@ -236,6 +238,11 @@ export default function DoctorDashboardPage() {
               )}
             </div>
           </Card>
+
+          {/* 💊 Patient Medication Adherence Tracker & Prescription Reminder Proposer */}
+          <div className="mb-8">
+            <DoctorMedicationTrackerWidget doctorName={doctorName} />
+          </div>
 
           {/* Clinical Metrics Cards */}
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-8">

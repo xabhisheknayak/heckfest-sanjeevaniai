@@ -121,6 +121,36 @@ export function AuthProvider({ children }) {
     return dataService.getImageAnalyses(user.uid)
   }, [user])
 
+  const createMedication = useCallback(async (medData) => {
+    if (!user) return null
+    return dataService.createMedication(user.uid, medData)
+  }, [user])
+
+  const fetchMedications = useCallback(async () => {
+    if (!user) return []
+    return dataService.getMedications(user.uid)
+  }, [user])
+
+  const updateMedication = useCallback(async (medId, updates) => {
+    if (!user) return null
+    return dataService.updateMedication(user.uid, medId, updates)
+  }, [user])
+
+  const deleteMedication = useCallback(async (medId) => {
+    if (!user) return false
+    return dataService.deleteMedication(user.uid, medId)
+  }, [user])
+
+  const recordMedicationLog = useCallback(async (logData) => {
+    if (!user) return null
+    return dataService.recordMedicationLog(user.uid, logData)
+  }, [user])
+
+  const fetchMedicationLogs = useCallback(async () => {
+    if (!user) return []
+    return dataService.getMedicationLogs(user.uid)
+  }, [user])
+
   const currentRole = profile?.role || USER_ROLES.PATIENT
   const isPatient = currentRole === USER_ROLES.PATIENT
   const isDoctor = currentRole === USER_ROLES.DOCTOR
@@ -147,6 +177,12 @@ export function AuthProvider({ children }) {
     fetchReports,
     fetchHealthRecords,
     fetchImageAnalyses,
+    createMedication,
+    fetchMedications,
+    updateMedication,
+    deleteMedication,
+    recordMedicationLog,
+    fetchMedicationLogs,
   }), [
     user,
     profile,
@@ -168,6 +204,12 @@ export function AuthProvider({ children }) {
     fetchReports,
     fetchHealthRecords,
     fetchImageAnalyses,
+    createMedication,
+    fetchMedications,
+    updateMedication,
+    deleteMedication,
+    recordMedicationLog,
+    fetchMedicationLogs,
   ])
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

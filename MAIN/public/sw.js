@@ -80,3 +80,22 @@ self.addEventListener('fetch', (event) => {
     })
   )
 })
+
+// Handle Notification Clicks to Focus or Open Medication Reminders Page
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close()
+  const targetUrl = '/medication-reminders'
+
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        if (client.url.includes(targetUrl) && 'focus' in client) {
+          return client.focus()
+        }
+      }
+      if (clients.openWindow) {
+        return clients.openWindow(targetUrl)
+      }
+    })
+  )
+})

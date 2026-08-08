@@ -1,12 +1,12 @@
 import { motion } from 'framer-motion'
-import { Activity, Camera, Download, HeartPulse, PlusCircle, ShieldCheck, Sparkles, Stethoscope } from 'lucide-react'
+import { Activity, Camera, Download, HeartPulse, PlusCircle, ShieldCheck, Sparkles, Stethoscope, Pill } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 import { Navbar } from '../components/layout/Navbar'
 import { Sidebar } from '../components/layout/Sidebar'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { SearchBar } from '../components/ui/SearchBar'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { Toast } from '../components/ui/Toast'
 import { SkeletonCard } from '../components/common/SkeletonCard'
@@ -16,16 +16,33 @@ import { AIChatAssistant } from '../components/common/AIChatAssistant'
 import { EmergencyButton } from '../components/common/EmergencyButton'
 import { LocationCard } from '../components/common/LocationCard'
 import { SEO } from '../components/common/SEO'
+import { MedicationReminderSection } from '../components/medication/MedicationReminderSection'
 
 import { getNavigationForRole } from '../config/navigationConfig'
 
 export default function DashboardPage() {
   const routerLocation = useLocation()
-  const { profile, role, fetchAppointments, fetchMedicalHistory, createAppointment, createMedicalHistory } = useAuth()
+  const {
+    profile,
+    role,
+    fetchAppointments,
+    fetchMedicalHistory,
+    createAppointment,
+    createMedicalHistory,
+    fetchMedications,
+    createMedication,
+    updateMedication,
+    deleteMedication,
+    recordMedicationLog,
+    fetchMedicationLogs,
+  } = useAuth()
+
   const navConfig = getNavigationForRole(role)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [appointments, setAppointments] = useState([])
   const [history, setHistory] = useState([])
+  const [medications, setMedications] = useState([])
+  const [medLogs, setMedLogs] = useState([])
   const [message, setMessage] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
   const [loading, setLoading] = useState(true)
@@ -36,21 +53,68 @@ export default function DashboardPage() {
     }
   }, [routerLocation.state])
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const [appointmentData, historyData] = await Promise.all([fetchAppointments(), fetchMedicalHistory()])
-        setAppointments(appointmentData)
-        setHistory(historyData)
-      } catch {
-        setMessage('Unable to load your latest care data.')
-      } finally {
-        setLoading(false)
-      }
+  const loadAllData = useCallback(async () => {
+    try {
+      const [appointmentData, historyData, medsData, logsData] = await Promise.all([
+        fetchAppointments(),
+        fetchMedicalHistory(),
+        fetchMedications(),
+        fetchMedicationLogs(),
+      ])
+      setAppointments(appointmentData || [])
+      setHistory(historyData || [])
+      setMedications(medsData || [])
+      setMedLogs(logsData || [])
+    } catch {
+      setMessage('Unable to load your latest care data.')
+    } finally {
+      setLoading(false)
     }
+  }, [fetchAppointments, fetchMedicalHistory, fetchMedications, fetchMedicationLogs])
 
-    load()
-  }, [fetchAppointments, fetchMedicalHistory])
+  useEffect(() => {
+    loadAllData()
+  }, [loadAllData])
+
+  const handleAddMedication = async (medData) => {
+    try {
+      await createMedication(medData)
+      setMessage(`Reminder created for ${medData.medicineName}.`)
+      await loadAllData()
+    } catch (err) {
+      setErrorMessage('Failed to add medication.')
+    }
+  }
+
+  const handleUpdateMedication = async (medId, updates) => {
+    try {
+      await updateMedication(medId, updates)
+      setMessage('Medication updated.')
+      await loadAllData()
+    } catch (err) {
+      setErrorMessage('Failed to update medication.')
+    }
+  }
+
+  const handleDeleteMedication = async (medId) => {
+    try {
+      await deleteMedication(medId)
+      setMessage('Medication deleted.')
+      await loadAllData()
+    } catch (err) {
+      setErrorMessage('Failed to delete medication.')
+    }
+  }
+
+  const handleRecordLog = async (logData) => {
+    try {
+      await recordMedicationLog(logData)
+      setMessage(`Marked ${logData.medicineName} as ${logData.status}.`)
+      await loadAllData()
+    } catch (err) {
+      setErrorMessage('Failed to record log.')
+    }
+  }
 
   const handleCreateDemoData = async () => {
     try {
@@ -122,7 +186,8 @@ export default function DashboardPage() {
               <div>
                 <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[#16A34A]">Quick actions</p>
                 <div className="mt-4 space-y-3">
-                  <Link to="/symptom-checker"><Button className="w-full justify-start gap-2"><HeartPulse className="h-4 w-4" /> Symptom checker</Button></Link>
+                  <Link to="/medication-reminders"><Button className="w-full justify-start gap-2 bg-[#16A34A] hover:bg-emerald-700 text-white"><Pill className="h-4 w-4" /> Medication Reminders</Button></Link>
+                  <Link to="/symptom-checker"><Button variant="secondary" className="w-full justify-start gap-2"><HeartPulse className="h-4 w-4" /> Symptom checker</Button></Link>
                   <Link to="/image-analysis"><Button variant="secondary" className="w-full justify-start gap-2"><Camera className="h-4 w-4" /> Image analysis</Button></Link>
                 </div>
               </div>
@@ -130,6 +195,17 @@ export default function DashboardPage() {
                 {appointments[0] ? `${appointments[0].title} • ${appointments[0].time}` : 'Next appointment • Ask your care team to schedule one'}
               </div>
             </Card>
+          </div>
+
+          <div className="mt-6">
+            <MedicationReminderSection
+              medications={medications}
+              logs={medLogs}
+              onAddMedication={handleAddMedication}
+              onUpdateMedication={handleUpdateMedication}
+              onDeleteMedication={handleDeleteMedication}
+              onRecordLog={handleRecordLog}
+            />
           </div>
 
           <div className="mt-6 grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
