@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion'
-import { MapPin, Globe, Navigation, ExternalLink, Stethoscope, X, ArrowRight, Phone, Clock, Building2, AlertCircle } from 'lucide-react'
+import { MapPin, Globe, Navigation, ExternalLink, Stethoscope, X, ArrowRight, Phone, Clock, Building2, AlertCircle, Star } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '../components/ui/Button'
