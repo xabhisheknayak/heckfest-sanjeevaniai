@@ -1,12 +1,14 @@
 import {
   addDoc,
   collection,
+  deleteDoc,
   doc,
   getDocs,
   orderBy,
   query,
   serverTimestamp,
   setDoc,
+  updateDoc,
   where,
 } from 'firebase/firestore'
 import { db, isDemoMode } from '../firebase'
@@ -47,7 +49,25 @@ async function mockCreateDoc(collectionName, userId, docData) {
 
 async function mockGetDocs(collectionName, userId) {
   const list = getLocalData(collectionName)
-  return list.filter((item) => item.userId === userId)
+  return list.filter((item) => item.userId === userId || item.patientId === userId)
+}
+
+async function mockUpdateDoc(collectionName, userId, docId, updates) {
+  const list = getLocalData(collectionName)
+  const index = list.findIndex((item) => item.id === docId && (item.userId === userId || item.patientId === userId))
+  if (index !== -1) {
+    list[index] = { ...list[index], ...updates, updatedAt: new Date().toISOString() }
+    saveLocalData(collectionName, list)
+    return list[index]
+  }
+  return null
+}
+
+async function mockDeleteDoc(collectionName, userId, docId) {
+  const list = getLocalData(collectionName)
+  const filtered = list.filter((item) => !(item.id === docId && (item.userId === userId || item.patientId === userId)))
+  saveLocalData(collectionName, filtered)
+  return true
 }
 
 export const dataService = {
@@ -299,5 +319,153 @@ export const dataService = {
       console.warn('Firestore image_analyses fetch failed, falling back to local:', err)
       return getLocalRecords()
     }
+  },
+
+  async createMedication(userId, medData) {
+    const payload = {
+      ...medData,
+      userId,
+      patientId: userId,
+      active: medData.active ?? true,
+    }
+    if (isDemoMode) {
+      return mockCreateDoc('medications', userId, payload)
+    }
+    try {
+      const docRef = await addDoc(collection(db, 'medications'), {
+        ...payload,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      })
+      return { id: docRef.id, ...payload }
+    } catch (err) {
+      console.warn('Firestore createMedication failed, saving locally:', err)
+      return mockCreateDoc('medications', userId, payload)
+    }
+  },
+
+  async getMedications(userId) {
+    if (isDemoMode) {
+      return mockGetDocs('medications', userId)
+    }
+    try {
+      const q = query(collection(db, 'medications'), where('userId', '==', userId))
+      const snapshot = await getDocs(q)
+      const docs = snapshot.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }))
+      if (docs.length === 0) return mockGetDocs('medications', userId)
+      return docs
+    } catch (err) {
+      console.warn('Firestore getMedications failed, using local storage:', err)
+      return mockGetDocs('medications', userId)
+    }
+  },
+
+  async updateMedication(userId, medId, updates) {
+    if (isDemoMode) {
+      return mockUpdateDoc('medications', userId, medId, updates)
+    }
+    try {
+      const docRef = doc(db, 'medications', medId)
+      await updateDoc(docRef, { ...updates, updatedAt: serverTimestamp() })
+      return { id: medId, ...updates }
+    } catch (err) {
+      console.warn('Firestore updateMedication failed, updating locally:', err)
+      return mockUpdateDoc('medications', userId, medId, updates)
+    }
+  },
+
+  async deleteMedication(userId, medId) {
+    if (isDemoMode) {
+      return mockDeleteDoc('medications', userId, medId)
+    }
+    try {
+      const docRef = doc(db, 'medications', medId)
+      await deleteDoc(docRef)
+      return true
+    } catch (err) {
+      console.warn('Firestore deleteMedication failed, deleting locally:', err)
+      return mockDeleteDoc('medications', userId, medId)
+    }
+  },
+
+  async recordMedicationLog(userId, logData) {
+    const payload = {
+      ...logData,
+      userId,
+      patientId: userId,
+      timestamp: new Date().toISOString(),
+    }
+    if (isDemoMode) {
+      // Check if existing log for date and medicationId exists
+      const list = getLocalData('medication_logs')
+      const existingIdx = list.findIndex(
+        (item) => (item.userId === userId || item.patientId === userId) && item.medicationId === logData.medicationId && item.date === logData.date
+      )
+      if (existingIdx !== -1) {
+        list[existingIdx] = { ...list[existingIdx], ...payload }
+        saveLocalData('medication_logs', list)
+        return list[existingIdx]
+      }
+      return mockCreateDoc('medication_logs', userId, payload)
+    }
+    try {
+      const q = query(
+        collection(db, 'medication_logs'),
+        where('userId', '==', userId),
+        where('medicationId', '==', logData.medicationId),
+        where('date', '==', logData.date)
+      )
+      const snapshot = await getDocs(q)
+      if (!snapshot.empty) {
+        const existingDoc = snapshot.docs[0]
+        await updateDoc(doc(db, 'medication_logs', existingDoc.id), {
+          ...payload,
+          updatedAt: serverTimestamp(),
+        })
+        return { id: existingDoc.id, ...payload }
+      }
+      const ref = await addDoc(collection(db, 'medication_logs'), {
+        ...payload,
+        createdAt: serverTimestamp(),
+      })
+      return { id: ref.id, ...payload }
+    } catch (err) {
+      console.warn('Firestore recordMedicationLog failed, using local storage:', err)
+      return mockCreateDoc('medication_logs', userId, payload)
+    }
+  },
+
+  async getMedicationLogs(userId) {
+    if (isDemoMode) {
+      const logs = await mockGetDocs('medication_logs', userId)
+      return logs.sort((a, b) => new Date(b.timestamp || b.createdAt || 0) - new Date(a.timestamp || a.createdAt || 0))
+    }
+    try {
+      const q = query(collection(db, 'medication_logs'), where('userId', '==', userId))
+      const snapshot = await getDocs(q)
+      const logs = snapshot.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }))
+      logs.sort((a, b) => new Date(b.timestamp || b.createdAt || 0) - new Date(a.timestamp || a.createdAt || 0))
+      return logs.length > 0 ? logs : mockGetDocs('medication_logs', userId)
+    } catch (err) {
+      console.warn('Firestore getMedicationLogs failed, using local storage:', err)
+      const logs = await mockGetDocs('medication_logs', userId)
+      return logs.sort((a, b) => new Date(b.timestamp || b.createdAt || 0) - new Date(a.timestamp || a.createdAt || 0))
+    }
+  },
+
+  async doctorGetPatientMedications(patientId) {
+    return this.getMedications(patientId)
+  },
+
+  async doctorGetPatientLogs(patientId) {
+    return this.getMedicationLogs(patientId)
+  },
+
+  async doctorAssignMedication(patientId, medData) {
+    return this.createMedication(patientId, {
+      ...medData,
+      assignedByDoctor: true,
+      doctorName: medData.doctorName || 'Dr. Practitioner',
+    })
   },
 }

@@ -29,6 +29,7 @@ const SettingsPage = lazy(() => import('./pages/SettingsPage'))
 const MapsPage = lazy(() => import('./pages/MapsPage'))
 const ChatPage = lazy(() => import('./pages/ChatPage'))
 const DoctorChatPage = lazy(() => import('./pages/DoctorChatPage'))
+const MedicationRemindersPage = lazy(() => import('./pages/MedicationRemindersPage'))
 
 function AnimatedRoutes() {
   const location = useLocation()
@@ -48,6 +49,7 @@ function AnimatedRoutes() {
           
           {/* Patient Portal Routes */}
           <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+          <Route path="/medication-reminders" element={<ProtectedRoute><MedicationRemindersPage /></ProtectedRoute>} />
           <Route path="/chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
           <Route path="/symptom-checker" element={<ProtectedRoute><SymptomCheckerPage /></ProtectedRoute>} />
           <Route path="/symptoms" element={<Navigate to="/symptom-checker" replace />} />

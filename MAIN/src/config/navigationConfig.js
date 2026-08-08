@@ -1,4 +1,4 @@
-import { Activity, CalendarDays, Camera, HeartPulse, Home, Hospital, Pill, Settings, Shield, Stethoscope, UserCircle2, FileText, MessageSquare } from 'lucide-react'
+import { Activity, CalendarDays, Camera, HeartPulse, Home, Hospital, Pill, Settings, Shield, Stethoscope, UserCircle2, FileText, MessageSquare, Clock } from 'lucide-react'
 import { USER_ROLES } from '../constants/roles'
 
 export function getNavigationForRole(role) {
@@ -56,6 +56,7 @@ export function getNavigationForRole(role) {
         mainDashboardPath: '/dashboard',
         sidebarLinks: [
           { to: '/dashboard', label: 'Dashboard', icon: Home },
+          { to: '/medication-reminders', label: '💊 Medication Reminders', icon: Clock },
           { to: '/chat', label: '💬 My Doctors', icon: MessageSquare },
           { to: '/symptom-checker', label: 'Symptom Checker', icon: HeartPulse },
           { to: '/image-analysis', label: 'Image Analysis', icon: Camera },
@@ -69,6 +70,7 @@ export function getNavigationForRole(role) {
         navbarLinks: [
           { to: '/', label: 'Home' },
           { to: '/dashboard', label: 'Dashboard' },
+          { to: '/medication-reminders', label: '💊 Reminders' },
           { to: '/chat', label: '💬 My Doctors' },
           { to: '/symptom-checker', label: 'Symptom Checker' },
           { to: '/doctor-finder', label: 'Doctors' },

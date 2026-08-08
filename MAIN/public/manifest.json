@@ -35,6 +35,13 @@
   ],
   "shortcuts": [
     {
+      "name": "Medication Reminders",
+      "short_name": "Reminders",
+      "description": "Track and log scheduled medication reminders",
+      "url": "/medication-reminders",
+      "icons": [{ "src": "/icons/pwa-192x192.svg", "sizes": "192x192" }]
+    },
+    {
       "name": "Symptom Checker",
       "short_name": "Check Symptoms",
       "description": "Evaluate symptoms using Gemini AI intake",
