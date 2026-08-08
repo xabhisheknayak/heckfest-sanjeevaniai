@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { Activity, Camera, Download, HeartPulse, PlusCircle, ShieldCheck, Sparkles, Stethoscope, Pill } from 'lucide-react'
+import { Activity, Camera, Download, HeartPulse, PlusCircle, ShieldCheck, Sparkles, Stethoscope, Pill, FileText } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 import { Navbar } from '../components/layout/Navbar'
 import { Sidebar } from '../components/layout/Sidebar'
@@ -17,6 +17,13 @@ import { EmergencyButton } from '../components/common/EmergencyButton'
 import { LocationCard } from '../components/common/LocationCard'
 import { SEO } from '../components/common/SEO'
 import { MedicationReminderSection } from '../components/medication/MedicationReminderSection'
+import { HealthScoreWidget } from '../components/medical/HealthScoreWidget'
+import { HealthOverviewWidget } from '../components/medical/HealthOverviewWidget'
+import { healthScoreService } from '../services/healthScoreService'
+import { healthRiskService } from '../services/healthRiskService'
+import { extractionService } from '../services/extractionService'
+import { MedicalRecordModal } from '../components/medical/MedicalRecordModal'
+import { VerificationModal } from '../components/medical/VerificationModal'
 
 import { getNavigationForRole } from '../config/navigationConfig'
 
@@ -35,6 +42,14 @@ export default function DashboardPage() {
     deleteMedication,
     recordMedicationLog,
     fetchMedicationLogs,
+    fetchStructuredMeasurements,
+    fetchBPHistory,
+    fetchBloodSugarHistory,
+    fetchMedicalRecords,
+    uploadMedicalRecord,
+    saveStructuredMeasurements,
+    saveHealthScoreSnapshot,
+    fetchHealthScoreHistory,
   } = useAuth()
 
   const navConfig = getNavigationForRole(role)
@@ -43,6 +58,21 @@ export default function DashboardPage() {
   const [history, setHistory] = useState([])
   const [medications, setMedications] = useState([])
   const [medLogs, setMedLogs] = useState([])
+  const [scoreData, setScoreData] = useState(null)
+  const [riskData, setRiskData] = useState(null)
+
+  // Pipeline Data State
+  const [structuredMetrics, setStructuredMetrics] = useState([])
+  const [bpHistory, setBpHistory] = useState([])
+  const [sugarHistory, setSugarHistory] = useState([])
+  const [medicalRecords, setMedicalRecords] = useState([])
+  const [scoreHistory, setScoreHistory] = useState([])
+
+  // Modal Control
+  const [isRecordModalOpen, setIsRecordModalOpen] = useState(false)
+  const [pendingVerificationMetrics, setPendingVerificationMetrics] = useState(null)
+  const [submitting, setSubmitting] = useState(false)
+
   const [message, setMessage] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
   const [loading, setLoading] = useState(true)
@@ -55,22 +85,100 @@ export default function DashboardPage() {
 
   const loadAllData = useCallback(async () => {
     try {
-      const [appointmentData, historyData, medsData, logsData] = await Promise.all([
+      const [appointmentData, historyData, medsData, logsData, structured, bp, sugar, records, sHistory] = await Promise.all([
         fetchAppointments(),
         fetchMedicalHistory(),
         fetchMedications(),
         fetchMedicationLogs(),
+        fetchStructuredMeasurements ? fetchStructuredMeasurements() : [],
+        fetchBPHistory ? fetchBPHistory() : [],
+        fetchBloodSugarHistory ? fetchBloodSugarHistory() : [],
+        fetchMedicalRecords ? fetchMedicalRecords() : [],
+        fetchHealthScoreHistory ? fetchHealthScoreHistory() : [],
       ])
       setAppointments(appointmentData || [])
       setHistory(historyData || [])
       setMedications(medsData || [])
       setMedLogs(logsData || [])
+      setStructuredMetrics(structured || [])
+      setBpHistory(bp || [])
+      setSugarHistory(sugar || [])
+      setMedicalRecords(records || [])
+      setScoreHistory(sHistory || [])
+
+      // Calculate Phase 3 Health Score & Phase 4 Health Risk
+      if (healthScoreService) {
+        const scoreRes = healthScoreService.calculateScore({
+          structuredMetrics: structured || [],
+          bpHistory: bp || [],
+          sugarHistory: sugar || [],
+        })
+        setScoreData(scoreRes)
+      }
+
+      if (healthRiskService) {
+        const riskRes = healthRiskService.evaluateRisk({
+          structuredMetrics: structured || [],
+          bpHistory: bp || [],
+          sugarHistory: sugar || [],
+        })
+        setRiskData(riskRes)
+      }
     } catch {
       setMessage('Unable to load your latest care data.')
     } finally {
       setLoading(false)
     }
-  }, [fetchAppointments, fetchMedicalHistory, fetchMedications, fetchMedicationLogs])
+  }, [fetchAppointments, fetchMedicalHistory, fetchMedications, fetchMedicationLogs, fetchStructuredMeasurements, fetchBPHistory, fetchBloodSugarHistory, fetchMedicalRecords, fetchHealthScoreHistory])
+
+  // Save Medical Record & Extract Metrics
+  const handleSaveMedicalRecord = async (recordMeta, file) => {
+    setSubmitting(true)
+    try {
+      const savedDoc = await uploadMedicalRecord(recordMeta, file)
+      setMessage('Medical record saved successfully!')
+
+      // Extract structured health parameters from report
+      const extracted = await extractionService.extractReportMetrics(
+        { ...recordMeta, id: savedDoc?.id || savedDoc?._id },
+        file
+      )
+
+      if (extracted && extracted.length > 0) {
+        setPendingVerificationMetrics(extracted)
+      }
+
+      await loadAllData()
+    } catch (err) {
+      setErrorMessage('Failed to upload medical record.')
+      throw err
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  // Save Verified Health Measurements & Snapshot Score
+  const handleSaveVerifiedMetrics = async (verifiedItems) => {
+    try {
+      await saveStructuredMeasurements(verifiedItems)
+
+      // Recalculate & Snapshot Score
+      const updatedScore = healthScoreService.calculateScore({
+        structuredMetrics: [...structuredMetrics, ...verifiedItems],
+        bpHistory,
+        sugarHistory,
+      })
+      if (saveHealthScoreSnapshot) {
+        await saveHealthScoreSnapshot(updatedScore)
+      }
+
+      setMessage('Verified health data saved and Health Score recalculated!')
+      setPendingVerificationMetrics(null)
+      await loadAllData()
+    } catch (err) {
+      setErrorMessage('Failed to save verified measurements.')
+    }
+  }
 
   useEffect(() => {
     loadAllData()
@@ -169,18 +277,16 @@ export default function DashboardPage() {
           </div>
 
           <div className="grid gap-6 xl:grid-cols-[1.3fr_0.7fr]">
-            <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
-              <Card className="overflow-hidden border-emerald-100 bg-gradient-to-br from-[#16A34A] to-[#0F172A] p-6 text-white dark:border-slate-800">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-sm text-emerald-100">Health score</p>
-                    <p className="mt-2 text-4xl font-semibold">87</p>
-                  </div>
-                  <div className="rounded-2xl bg-white/15 p-3"><ShieldCheck className="h-6 w-6" /></div>
-                </div>
-                <p className="mt-6 max-w-xl text-sm leading-7 text-emerald-50">Your trends look stable this week. Keep your hydration and sleep routine consistent for the best recovery outcome.</p>
-              </Card>
-            </motion.div>
+            <HealthOverviewWidget 
+              scoreData={scoreData} 
+              riskData={riskData} 
+              onAddRecordClick={() => setIsRecordModalOpen(true)}
+              bpHistory={bpHistory}
+              sugarHistory={sugarHistory}
+              structuredMetrics={structuredMetrics}
+              medicalRecords={medicalRecords}
+              scoreHistory={scoreHistory}
+            />
 
             <Card hover={true} className="flex flex-col justify-between dark:border-slate-800 dark:bg-slate-900/80">
               <div>
@@ -210,14 +316,20 @@ export default function DashboardPage() {
 
           <div className="mt-6 grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
             <Card hover={true} className="dark:border-slate-800 dark:bg-slate-900/80">
-              <div className="mb-4 flex items-center justify-between">
+              <div className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
                   <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[#16A34A]">Recent reports</p>
                   <h2 className="text-xl font-semibold text-slate-950 dark:text-white">Latest health insights</h2>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Button variant="secondary" onClick={handleExportHistory} className="gap-2"><Download className="h-4 w-4" /> Export</Button>
-                  <Link to="/medical-history"><Button variant="ghost">View all</Button></Link>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button
+                    onClick={() => setIsRecordModalOpen(true)}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs gap-1.5 px-3 py-1.5"
+                  >
+                    <FileText className="h-3.5 w-3.5" /> [ + Upload PDF Report ]
+                  </Button>
+                  <Button variant="secondary" onClick={handleExportHistory} className="gap-1 text-xs py-1.5"><Download className="h-3.5 w-3.5" /> Export</Button>
+                  <Link to="/medical-history"><Button variant="ghost" className="text-xs py-1.5">View all</Button></Link>
                 </div>
               </div>
               {loading ? (
@@ -227,14 +339,26 @@ export default function DashboardPage() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {(history.length ? history : [{ title: 'Routine blood panel', detail: 'Completed 2 days ago • Normal range', tone: 'success' }, { title: 'ECG summary', detail: 'Reviewed by care team • Stable', tone: 'info' }]).map((item) => (
-                    <div key={item.title} className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 dark:border-slate-800 dark:bg-slate-950/60">
+                  {(medicalRecords.length > 0 ? medicalRecords.slice(0, 4) : [
+                    { id: 'demo-1', recordName: 'Routine Blood Panel (PDF)', recordDate: '2026-08-08', recordType: 'blood_report', doctorName: 'Dr. Nair', mimeType: 'application/pdf' },
+                    { id: 'demo-2', recordName: 'Cardiology BP Summary', recordDate: '2026-08-05', recordType: 'blood_pressure', doctorName: 'Dr. Mehta', mimeType: 'application/pdf' }
+                  ]).map((item) => (
+                    <div key={item.id || item.recordName} className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 dark:border-slate-800 dark:bg-slate-950/60">
                       <div className="flex items-start justify-between gap-3">
                         <div>
-                          <p className="font-semibold text-slate-900 dark:text-slate-100">{item.title}</p>
-                          <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">{item.detail}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="font-semibold text-slate-900 dark:text-slate-100">{item.recordName}</p>
+                            <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 uppercase">
+                              {item.mimeType === 'application/pdf' || String(item.recordName).toLowerCase().includes('pdf') ? 'PDF' : 'REPORT'}
+                            </span>
+                          </div>
+                          <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">
+                            {item.recordDate ? String(item.recordDate).split('T')[0] : 'Recent'} • {item.doctorName || 'Practitioner'} {item.hospitalName ? `(${item.hospitalName})` : ''}
+                          </p>
                         </div>
-                        <span className={`rounded-full px-3 py-1 text-xs font-semibold ${item.tone === 'success' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300' : 'bg-sky-100 text-sky-700 dark:bg-sky-950/40 dark:text-sky-300'}`}>{item.tone === 'success' ? 'Stable' : 'Reviewed'}</span>
+                        <span className="rounded-full px-3 py-1 text-xs font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
+                          Structured & Calculated
+                        </span>
                       </div>
                     </div>
                   ))}
@@ -332,6 +456,20 @@ export default function DashboardPage() {
 
           {message && <div className="mt-6"><Toast title="Update" message={message} tone="success" /></div>}
           {errorMessage && <div className="mt-6"><Toast title="Access Notice" message={errorMessage} tone="warning" /></div>}
+
+          <MedicalRecordModal
+            open={isRecordModalOpen}
+            onClose={() => setIsRecordModalOpen(false)}
+            onSubmit={handleSaveMedicalRecord}
+            submitting={submitting}
+          />
+
+          <VerificationModal
+            open={Boolean(pendingVerificationMetrics)}
+            onClose={() => setPendingVerificationMetrics(null)}
+            metrics={pendingVerificationMetrics || []}
+            onSaveVerified={handleSaveVerifiedMetrics}
+          />
         </main>
       </div>
       <EmergencyButton />

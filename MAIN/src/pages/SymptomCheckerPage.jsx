@@ -172,7 +172,7 @@ export default function SymptomCheckerPage() {
       // 1. Analyze Symptoms + Questionnaire
       const structuredAnswersStr = Object.entries(answers)
         .map(([qId, ans]) => {
-          const qObj = questions.find(q => q.id === Number(qId))
+          const qObj = questions.find(q => String(q.id) === String(qId) || q.id === Number(qId))
           return `[Q: ${qObj?.question || 'Question'}] -> Answer: ${ans}`
         })
         .join(' | ')

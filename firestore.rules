@@ -1,0 +1,71 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isDoctorOrAdmin() {
+      return isAuthenticated() && (
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['doctor', 'admin']
+      );
+    }
+
+    // User profiles
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow write: if isOwner(userId);
+    }
+
+    // Patient Medical Records collection
+    match /medicalRecords/{recordId} {
+      // Patient can read their own records; Authorized doctors/admins can read patient records
+      allow read: if isAuthenticated() && (
+        request.auth.uid == resource.data.patientId || 
+        request.auth.uid == resource.data.userId || 
+        isDoctorOrAdmin()
+      );
+
+      // Patients can create records for themselves
+      allow create: if isAuthenticated() && (
+        request.resource.data.patientId == request.auth.uid ||
+        request.resource.data.userId == request.auth.uid
+      );
+
+      // Patients can update their own records
+      allow update: if isAuthenticated() && (
+        resource.data.patientId == request.auth.uid ||
+        resource.data.userId == request.auth.uid
+      );
+
+      // Patients can delete their own records
+      allow delete: if isAuthenticated() && (
+        resource.data.patientId == request.auth.uid ||
+        resource.data.userId == request.auth.uid
+      );
+    }
+
+    // Health records & Vitals
+    match /health_records/{recordId} {
+      allow read: if isAuthenticated() && (resource.data.uid == request.auth.uid || isDoctorOrAdmin());
+      allow write: if isAuthenticated() && request.resource.data.uid == request.auth.uid;
+    }
+
+    // Appointments
+    match /appointments/{appointmentId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // Medications
+    match /medications/{medicationId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+  }
+}

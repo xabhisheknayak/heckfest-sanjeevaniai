@@ -12,6 +12,7 @@ import {
   where,
 } from 'firebase/firestore'
 import { db, isDemoMode } from '../firebase'
+import { recordStorageService } from './recordStorageService'
 
 const LOCAL_STORAGE_PREFIX = 'sanjivni-demo-db-'
 
@@ -172,7 +173,7 @@ export const dataService = {
         if (key && key.startsWith(prefix)) {
           try {
             const data = JSON.parse(localStorage.getItem(key))
-            if (data.uid === userId) {
+            if (data && data.uid === userId) {
               records.push(data)
             }
           } catch (e) {
@@ -233,7 +234,7 @@ export const dataService = {
         if (key && key.startsWith(prefix)) {
           try {
             const data = JSON.parse(localStorage.getItem(key))
-            if (data.uid === userId) records.push(data)
+            if (data && data.uid === userId) records.push(data)
           } catch (e) {
             console.error(e)
           }
@@ -282,7 +283,7 @@ export const dataService = {
         if (key && key.startsWith(prefix)) {
           try {
             const data = JSON.parse(localStorage.getItem(key))
-            if (data.uid === userId) records.push(data)
+            if (data && data.uid === userId) records.push(data)
           } catch (e) {
             console.error(e)
           }
@@ -468,4 +469,316 @@ export const dataService = {
       doctorName: medData.doctorName || 'Dr. Practitioner',
     })
   },
+
+  async uploadMedicalRecord(userId, recordMeta, file) {
+    const uploadRes = await recordStorageService.uploadFile(userId, file)
+    const payload = {
+      patientId: userId,
+      userId: userId,
+      recordType: recordMeta.recordType || 'other_documents',
+      recordName: recordMeta.recordName,
+      recordDate: recordMeta.recordDate || new Date().toISOString().split('T')[0],
+      doctorName: recordMeta.doctorName || '',
+      hospitalName: recordMeta.hospitalName || '',
+      fileUrl: uploadRes.fileUrl,
+      storagePath: uploadRes.storagePath,
+      mimeType: uploadRes.mimeType,
+      fileSize: uploadRes.fileSize,
+      notes: recordMeta.notes || '',
+    }
+
+    if (isDemoMode) {
+      return mockCreateDoc('medicalRecords', userId, payload)
+    }
+
+    try {
+      const docRef = await addDoc(collection(db, 'medicalRecords'), {
+        ...payload,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      })
+      return { id: docRef.id, ...payload }
+    } catch (err) {
+      console.warn('Firestore uploadMedicalRecord metadata save failed, saving locally:', err)
+      return mockCreateDoc('medicalRecords', userId, payload)
+    }
+  },
+
+  async getMedicalRecords(userId) {
+    if (isDemoMode) {
+      const docs = await mockGetDocs('medicalRecords', userId)
+      return docs.sort((a, b) => new Date(b.recordDate || b.createdAt || 0) - new Date(a.recordDate || a.createdAt || 0))
+    }
+    try {
+      // Query by patientId first, fallback to userId if needed
+      let q = query(collection(db, 'medicalRecords'), where('patientId', '==', userId))
+      let snapshot = await getDocs(q)
+      if (snapshot.empty) {
+        q = query(collection(db, 'medicalRecords'), where('userId', '==', userId))
+        snapshot = await getDocs(q)
+      }
+      const docs = snapshot.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }))
+      docs.sort((a, b) => new Date(b.recordDate || b.createdAt || 0) - new Date(a.recordDate || a.createdAt || 0))
+      return docs.length > 0 ? docs : mockGetDocs('medicalRecords', userId)
+    } catch (err) {
+      console.warn('Firestore getMedicalRecords failed, reading locally:', err)
+      const docs = await mockGetDocs('medicalRecords', userId)
+      return docs.sort((a, b) => new Date(b.recordDate || b.createdAt || 0) - new Date(a.recordDate || a.createdAt || 0))
+    }
+  },
+
+  async deleteMedicalRecord(userId, recordId, storagePath) {
+    // Step 1: Delete file from Firebase Storage
+    if (storagePath) {
+      await recordStorageService.deleteFile(storagePath)
+    }
+
+    // Step 2: Delete exclusive structured measurements derived ONLY from this report
+    try {
+      if (isDemoMode) {
+        const localMetrics = mockGetDocs('structuredMeasurements', userId)
+        const toRemove = localMetrics.filter((m) => m.sourceRecordId === recordId)
+        toRemove.forEach((m) => mockDeleteDoc('structuredMeasurements', userId, m.id))
+      } else {
+        const q = query(
+          collection(db, 'structuredMeasurements'),
+          where('patientId', '==', userId),
+          where('sourceRecordId', '==', recordId)
+        )
+        const snap = await getDocs(q)
+        const deletePromises = snap.docs.map((d) => deleteDoc(doc(db, 'structuredMeasurements', d.id)))
+        await Promise.all(deletePromises)
+      }
+    } catch (err) {
+      console.warn('Firestore structured measurements deletion warning:', err)
+    }
+
+    // Step 3: Delete metadata document from Firestore or local storage
+    if (isDemoMode) {
+      return mockDeleteDoc('medicalRecords', userId, recordId)
+    }
+
+    try {
+      const docRef = doc(db, 'medicalRecords', recordId)
+      await deleteDoc(docRef)
+      return true
+    } catch (err) {
+      console.warn('Firestore deleteMedicalRecord doc delete failed, deleting locally:', err)
+      return mockDeleteDoc('medicalRecords', userId, recordId)
+    }
+  },
+
+  // PHASE 2: Structured Health Data Functions
+  async saveStructuredMeasurements(userId, metrics) {
+    const results = []
+    for (const metric of metrics) {
+      const payload = {
+        ...metric,
+        patientId: userId,
+        userId: userId,
+        verified: metric.verified ?? false,
+      }
+      if (isDemoMode) {
+        const saved = await mockCreateDoc('structuredMeasurements', userId, payload)
+        results.push(saved)
+      } else {
+        try {
+          const docRef = await addDoc(collection(db, 'structuredMeasurements'), {
+            ...payload,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+          })
+          results.push({ id: docRef.id, ...payload })
+        } catch (err) {
+          console.warn('Firestore saveStructuredMeasurements error, saving locally:', err)
+          const saved = await mockCreateDoc('structuredMeasurements', userId, payload)
+          results.push(saved)
+        }
+      }
+    }
+    return results
+  },
+
+  async getStructuredMeasurements(userId) {
+    if (isDemoMode) {
+      const docs = await mockGetDocs('structuredMeasurements', userId)
+      return docs.sort((a, b) => new Date(b.measurementDate || b.createdAt || 0) - new Date(a.measurementDate || a.createdAt || 0))
+    }
+    try {
+      let q = query(collection(db, 'structuredMeasurements'), where('patientId', '==', userId))
+      let snapshot = await getDocs(q)
+      if (snapshot.empty) {
+        q = query(collection(db, 'structuredMeasurements'), where('userId', '==', userId))
+        snapshot = await getDocs(q)
+      }
+      const docs = snapshot.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }))
+      docs.sort((a, b) => new Date(b.measurementDate || b.createdAt || 0) - new Date(a.measurementDate || a.createdAt || 0))
+      return docs.length > 0 ? docs : mockGetDocs('structuredMeasurements', userId)
+    } catch (err) {
+      console.warn('Firestore getStructuredMeasurements error, loading local data:', err)
+      const docs = await mockGetDocs('structuredMeasurements', userId)
+      return docs.sort((a, b) => new Date(b.measurementDate || b.createdAt || 0) - new Date(a.measurementDate || a.createdAt || 0))
+    }
+  },
+
+  async updateStructuredMeasurement(userId, docId, updates) {
+    if (isDemoMode) {
+      return mockUpdateDoc('structuredMeasurements', userId, docId, updates)
+    }
+    try {
+      const docRef = doc(db, 'structuredMeasurements', docId)
+      await updateDoc(docRef, { ...updates, updatedAt: serverTimestamp() })
+      return { id: docId, ...updates }
+    } catch (err) {
+      console.warn('Firestore updateStructuredMeasurement error, updating locally:', err)
+      return mockUpdateDoc('structuredMeasurements', userId, docId, updates)
+    }
+  },
+
+  async saveBPReading(userId, bpData) {
+    const payload = {
+      patientId: userId,
+      userId: userId,
+      systolic: Number(bpData.systolic),
+      diastolic: Number(bpData.diastolic),
+      measurementDate: bpData.measurementDate || new Date().toISOString().split('T')[0],
+      measurementTime: bpData.measurementTime || '10:00 AM',
+      source: bpData.source || 'Manual', // 'Manual' | 'Doctor' | 'Report'
+      verified: bpData.verified ?? true,
+    }
+    if (isDemoMode) {
+      return mockCreateDoc('bpReadings', userId, payload)
+    }
+    try {
+      const docRef = await addDoc(collection(db, 'bpReadings'), {
+        ...payload,
+        createdAt: serverTimestamp(),
+      })
+      return { id: docRef.id, ...payload }
+    } catch (err) {
+      console.warn('Firestore saveBPReading error, saving locally:', err)
+      return mockCreateDoc('bpReadings', userId, payload)
+    }
+  },
+
+  async getBPHistory(userId) {
+    if (isDemoMode) {
+      const docs = await mockGetDocs('bpReadings', userId)
+      return docs.sort((a, b) => new Date(b.measurementDate || b.createdAt || 0) - new Date(a.measurementDate || a.createdAt || 0))
+    }
+    try {
+      let q = query(collection(db, 'bpReadings'), where('patientId', '==', userId))
+      let snapshot = await getDocs(q)
+      if (snapshot.empty) {
+        q = query(collection(db, 'bpReadings'), where('userId', '==', userId))
+        snapshot = await getDocs(q)
+      }
+      const docs = snapshot.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }))
+      docs.sort((a, b) => new Date(b.measurementDate || b.createdAt || 0) - new Date(a.measurementDate || a.createdAt || 0))
+      return docs.length > 0 ? docs : mockGetDocs('bpReadings', userId)
+    } catch (err) {
+      console.warn('Firestore getBPHistory error, loading local data:', err)
+      const docs = await mockGetDocs('bpReadings', userId)
+      return docs.sort((a, b) => new Date(b.measurementDate || b.createdAt || 0) - new Date(a.measurementDate || a.createdAt || 0))
+    }
+  },
+
+  async saveBloodSugarReading(userId, sugarData) {
+    const payload = {
+      patientId: userId,
+      userId: userId,
+      value: Number(sugarData.value),
+      unit: sugarData.unit || 'mg/dL',
+      measurementType: sugarData.measurementType || 'fasting', // 'fasting' | 'post-meal' | 'random' | 'HbA1c'
+      measurementDate: sugarData.measurementDate || new Date().toISOString().split('T')[0],
+      verified: sugarData.verified ?? true,
+    }
+    if (isDemoMode) {
+      return mockCreateDoc('bloodSugarReadings', userId, payload)
+    }
+    try {
+      const docRef = await addDoc(collection(db, 'bloodSugarReadings'), {
+        ...payload,
+        createdAt: serverTimestamp(),
+      })
+      return { id: docRef.id, ...payload }
+    } catch (err) {
+      console.warn('Firestore saveBloodSugarReading error, saving locally:', err)
+      return mockCreateDoc('bloodSugarReadings', userId, payload)
+    }
+  },
+
+  async getBloodSugarHistory(userId) {
+    if (isDemoMode) {
+      const docs = await mockGetDocs('bloodSugarReadings', userId)
+      return docs.sort((a, b) => new Date(b.measurementDate || b.createdAt || 0) - new Date(a.measurementDate || a.createdAt || 0))
+    }
+    try {
+      let q = query(collection(db, 'bloodSugarReadings'), where('patientId', '==', userId))
+      let snapshot = await getDocs(q)
+      if (snapshot.empty) {
+        q = query(collection(db, 'bloodSugarReadings'), where('userId', '==', userId))
+        snapshot = await getDocs(q)
+      }
+      const docs = snapshot.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }))
+      docs.sort((a, b) => new Date(b.measurementDate || b.createdAt || 0) - new Date(a.measurementDate || a.createdAt || 0))
+      return docs.length > 0 ? docs : mockGetDocs('bloodSugarReadings', userId)
+    } catch (err) {
+      console.warn('Firestore getBloodSugarHistory error, loading local data:', err)
+      const docs = await mockGetDocs('bloodSugarReadings', userId)
+      return docs.sort((a, b) => new Date(b.measurementDate || b.createdAt || 0) - new Date(a.measurementDate || a.createdAt || 0))
+    }
+  },
+
+  // PHASE 3: Health Score History Snapshots
+  async saveHealthScoreSnapshot(userId, scorePayload) {
+    const payload = {
+      patientId: userId,
+      userId: userId,
+      score: scorePayload.overallScore,
+      dataCompleteness: scorePayload.dataCompleteness,
+      calculatedAt: scorePayload.calculatedAt || new Date().toISOString(),
+      sourceRecordIds: scorePayload.sourceRecordIds || [],
+      isLimitedData: scorePayload.isLimitedData ?? false,
+    }
+
+    if (isDemoMode) {
+      return mockCreateDoc('healthScoreHistory', userId, payload)
+    }
+
+    try {
+      const docRef = await addDoc(collection(db, 'healthScoreHistory'), {
+        ...payload,
+        createdAt: serverTimestamp(),
+      })
+      return { id: docRef.id, ...payload }
+    } catch (err) {
+      console.warn('Firestore saveHealthScoreSnapshot error, saving locally:', err)
+      return mockCreateDoc('healthScoreHistory', userId, payload)
+    }
+  },
+
+  async getHealthScoreHistory(userId) {
+    if (isDemoMode) {
+      const docs = await mockGetDocs('healthScoreHistory', userId)
+      return docs.sort((a, b) => new Date(b.calculatedAt || b.createdAt || 0) - new Date(a.calculatedAt || a.createdAt || 0))
+    }
+    try {
+      let q = query(collection(db, 'healthScoreHistory'), where('patientId', '==', userId))
+      let snapshot = await getDocs(q)
+      if (snapshot.empty) {
+        q = query(collection(db, 'healthScoreHistory'), where('userId', '==', userId))
+        snapshot = await getDocs(q)
+      }
+      const docs = snapshot.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }))
+      docs.sort((a, b) => new Date(b.calculatedAt || b.createdAt || 0) - new Date(a.calculatedAt || a.createdAt || 0))
+      return docs.length > 0 ? docs : mockGetDocs('healthScoreHistory', userId)
+    } catch (err) {
+      console.warn('Firestore getHealthScoreHistory error, loading local data:', err)
+      const docs = await mockGetDocs('healthScoreHistory', userId)
+      return docs.sort((a, b) => new Date(b.calculatedAt || b.createdAt || 0) - new Date(a.calculatedAt || a.createdAt || 0))
+    }
+  },
 }
+
+

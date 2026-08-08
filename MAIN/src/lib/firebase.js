@@ -1,6 +1,7 @@
 import { initializeApp } from 'firebase/app'
 import { getAuth } from 'firebase/auth'
 import { getFirestore } from 'firebase/firestore'
+import { getStorage } from 'firebase/storage'
 
 const env = (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env : {}
 const apiKey = env.VITE_FIREBASE_API_KEY
@@ -10,6 +11,7 @@ export const isDemoMode = !apiKey || apiKey === 'demo-api-key' || apiKey.length 
 let app = null
 let auth = null
 let db = null
+let storage = null
 
 if (!isDemoMode) {
   try {
@@ -25,11 +27,12 @@ if (!isDemoMode) {
     app = initializeApp(firebaseConfig)
     auth = getAuth(app)
     db = getFirestore(app)
+    storage = getStorage(app)
   } catch (err) {
     console.warn('Firebase initialization skipped, running in Demo Mode:', err.message)
   }
 }
 
-export { auth, db }
+export { auth, db, storage }
 export default app
 

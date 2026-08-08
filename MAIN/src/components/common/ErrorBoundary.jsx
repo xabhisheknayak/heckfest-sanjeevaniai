@@ -3,41 +3,61 @@ import { Component } from 'react'
 export class ErrorBoundary extends Component {
   constructor(props) {
     super(props)
-    this.state = { hasError: false, errorMessage: '' }
+    this.state = { hasError: false, error: null }
   }
 
   static getDerivedStateFromError(error) {
-    return { hasError: true, errorMessage: error?.message || 'Unknown error' }
+    return { hasError: true, error }
   }
 
-  componentDidCatch(error, info) {
-    console.error('[ErrorBoundary] Caught error:', error, info)
+  componentDidCatch(error, errorInfo) {
+    console.error('SanjivniAI ErrorBoundary caught an unhandled error:', error, errorInfo)
+  }
+
+  handleResetSession = () => {
+    try {
+      localStorage.removeItem('sanjivni-demo-auth')
+      localStorage.removeItem('sanjivni-emergency-contacts')
+    } catch (e) {
+      console.warn('Failed to clear storage:', e)
+    }
+    window.location.href = '/'
   }
 
   render() {
     if (this.state.hasError) {
       return (
-        <div className="flex min-h-screen items-center justify-center bg-[#F8FAFC] dark:bg-slate-950 px-4">
-          <div className="max-w-md rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-8 text-center shadow-xl">
-            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-red-50 dark:bg-red-950/30 text-red-500">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
-              </svg>
+        <div className="flex min-h-screen items-center justify-center bg-[#F8FAFC] px-4 py-12 dark:bg-slate-950 dark:text-slate-100">
+          <div className="max-w-md w-full rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-xl dark:border-slate-800 dark:bg-slate-900">
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400">
+              ⚠️
             </div>
-            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[#16A34A]">Unexpected issue</p>
-            <h2 className="mt-2 text-2xl font-semibold text-slate-900 dark:text-white">Something went wrong</h2>
-            <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">
-              Please refresh the page or contact support if this keeps happening.
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#16A34A]">App Recovery Mode</p>
+            <h2 className="mt-2 text-2xl font-bold text-slate-900 dark:text-white">Something went wrong</h2>
+            <p className="mt-3 text-xs leading-relaxed text-slate-600 dark:text-slate-400">
+              An unexpected issue occurred while rendering this page. You can refresh or reset your local session data to recover.
             </p>
-            <button
-              onClick={() => window.location.reload()}
-              className="mt-6 inline-flex items-center gap-2 rounded-2xl bg-[#16A34A] px-6 py-3 text-sm font-semibold text-white hover:bg-[#15803D] transition cursor-pointer"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-              Refresh Page
-            </button>
+
+            {this.state.error && (
+              <div className="mt-4 rounded-xl bg-slate-100 p-3 text-left font-mono text-[11px] text-red-600 dark:bg-slate-950 dark:text-red-400 overflow-x-auto max-h-32 border border-slate-200 dark:border-slate-800">
+                {this.state.error.toString()}
+              </div>
+            )}
+
+            <div className="mt-6 flex flex-col sm:flex-row gap-3">
+              <button
+                onClick={() => window.location.reload()}
+                className="flex-1 rounded-xl bg-[#16A34A] px-4 py-2.5 text-xs font-bold text-white hover:bg-[#15803D] transition cursor-pointer"
+              >
+                🔄 Refresh Page
+              </button>
+              <button
+                onClick={this.handleResetSession}
+                className="flex-1 rounded-xl border border-slate-300 bg-slate-50 px-4 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 transition cursor-pointer"
+              >
+                🧹 Reset Session & Home
+              </button>
+            </div>
           </div>
         </div>
       )
