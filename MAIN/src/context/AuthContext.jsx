@@ -151,6 +151,73 @@ export function AuthProvider({ children }) {
     return dataService.getMedicationLogs(user.uid)
   }, [user])
 
+  const uploadMedicalRecord = useCallback(async (recordMeta, file) => {
+    if (!user) return null
+    return dataService.uploadMedicalRecord(user.uid, recordMeta, file)
+  }, [user])
+
+  const fetchMedicalRecords = useCallback(async () => {
+    if (!user) return []
+    return dataService.getMedicalRecords(user.uid)
+  }, [user])
+
+  const deleteMedicalRecord = useCallback(async (recordId, storagePath) => {
+    if (!user) return false
+    return dataService.deleteMedicalRecord(user.uid, recordId, storagePath)
+  }, [user])
+
+  const saveStructuredMeasurements = useCallback(async (metrics) => {
+    if (!user) return []
+    return dataService.saveStructuredMeasurements(user.uid, metrics)
+  }, [user])
+
+  const fetchStructuredMeasurements = useCallback(async () => {
+    if (!user) return []
+    return dataService.getStructuredMeasurements(user.uid)
+  }, [user])
+
+  const updateStructuredMeasurement = useCallback(async (docId, updates) => {
+    if (!user) return null
+    return dataService.updateStructuredMeasurement(user.uid, docId, updates)
+  }, [user])
+
+  const saveBPReading = useCallback(async (bpData) => {
+    if (!user) return null
+    return dataService.saveBPReading(user.uid, bpData)
+  }, [user])
+
+  const fetchBPHistory = useCallback(async () => {
+    if (!user) return []
+    return dataService.getBPHistory(user.uid)
+  }, [user])
+
+  const saveBloodSugarReading = useCallback(async (sugarData) => {
+    if (!user) return null
+    return dataService.saveBloodSugarReading(user.uid, sugarData)
+  }, [user])
+
+  const fetchBloodSugarHistory = useCallback(async () => {
+    if (!user) return []
+    return dataService.getBloodSugarHistory(user.uid)
+  }, [user])
+
+  const saveHealthScoreSnapshot = useCallback(async (scorePayload) => {
+    if (!user) return null
+    return dataService.saveHealthScoreSnapshot(user.uid, scorePayload)
+  }, [user])
+
+  const fetchHealthScoreHistory = useCallback(async () => {
+    if (!user) return []
+    return dataService.getHealthScoreHistory(user.uid)
+  }, [user])
+
+  const updateUserProfile = useCallback(async (updates) => {
+    if (!user) return null
+    const updated = await authService.updateUserProfile(user.uid, updates)
+    setProfile((prev) => ({ ...prev, ...updated }))
+    return updated
+  }, [user])
+
   const currentRole = profile?.role || USER_ROLES.PATIENT
   const isPatient = currentRole === USER_ROLES.PATIENT
   const isDoctor = currentRole === USER_ROLES.DOCTOR
@@ -169,6 +236,7 @@ export function AuthProvider({ children }) {
     signUp,
     resetPassword,
     logout,
+    updateUserProfile,
     createAppointment,
     fetchAppointments,
     createMedicalHistory,
@@ -183,6 +251,18 @@ export function AuthProvider({ children }) {
     deleteMedication,
     recordMedicationLog,
     fetchMedicationLogs,
+    uploadMedicalRecord,
+    fetchMedicalRecords,
+    deleteMedicalRecord,
+    saveStructuredMeasurements,
+    fetchStructuredMeasurements,
+    updateStructuredMeasurement,
+    saveBPReading,
+    fetchBPHistory,
+    saveBloodSugarReading,
+    fetchBloodSugarHistory,
+    saveHealthScoreSnapshot,
+    fetchHealthScoreHistory,
   }), [
     user,
     profile,
@@ -210,7 +290,21 @@ export function AuthProvider({ children }) {
     deleteMedication,
     recordMedicationLog,
     fetchMedicationLogs,
+    uploadMedicalRecord,
+    fetchMedicalRecords,
+    deleteMedicalRecord,
+    saveStructuredMeasurements,
+    fetchStructuredMeasurements,
+    updateStructuredMeasurement,
+    saveBPReading,
+    fetchBPHistory,
+    saveBloodSugarReading,
+    fetchBloodSugarHistory,
+    saveHealthScoreSnapshot,
+    fetchHealthScoreHistory,
   ])
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
+
+

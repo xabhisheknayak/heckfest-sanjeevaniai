@@ -13,6 +13,7 @@ import { analyzePatientSummary, generatePrescriptionDraft } from '../lib/gemini'
 import { DoctorAIAssistant } from '../components/common/DoctorAIAssistant'
 
 import { DoctorMedicationTrackerWidget } from '../components/doctor/DoctorMedicationTrackerWidget'
+import { DoctorPatientOverviewModal } from '../components/doctor/DoctorPatientOverviewModal'
 
 export default function DoctorDashboardPage() {
   const routerLocation = useLocation()
@@ -29,6 +30,7 @@ export default function DoctorDashboardPage() {
   const [activePatientSummary, setActivePatientSummary] = useState(null)
   const [activePatientError, setActivePatientError] = useState(null)
   const [selectedPatientModal, setSelectedPatientModal] = useState(null)
+  const [overviewPatient, setOverviewPatient] = useState(null)
 
   // Prescription Draft Modal State
   const [showPrescriptionModal, setShowPrescriptionModal] = useState(false)
@@ -340,10 +342,13 @@ export default function DoctorDashboardPage() {
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-3 self-end sm:self-center">
-                          <span className="text-xs font-mono font-bold text-slate-700 dark:text-slate-300">
-                            {app.time}
-                          </span>
+                        <div className="flex flex-wrap items-center gap-2 self-end sm:self-center">
+                          <button
+                            onClick={() => setOverviewPatient(app)}
+                            className="rounded-xl bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-800 border border-emerald-200 hover:bg-emerald-100 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800 cursor-pointer"
+                          >
+                            ❤️ Review Health Overview
+                          </button>
                           <button
                             onClick={() => handleActionClick(`Consultation with ${app.patient}`)}
                             className="rounded-xl bg-slate-900 px-3.5 py-1.5 text-xs font-bold text-white hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 cursor-pointer"
@@ -674,6 +679,12 @@ export default function DoctorDashboardPage() {
             open={showDoctorAIAssistant}
             onClose={() => setShowDoctorAIAssistant(false)}
             selectedPatient={selectedPatientModal}
+          />
+
+          <DoctorPatientOverviewModal
+            open={Boolean(overviewPatient)}
+            onClose={() => setOverviewPatient(null)}
+            patient={overviewPatient}
           />
         </main>
       </div>

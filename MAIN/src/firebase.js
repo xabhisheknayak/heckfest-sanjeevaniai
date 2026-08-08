@@ -1,1 +1,2 @@
-export { default, auth, db, isDemoMode } from './lib/firebase'
+export { default, auth, db, storage, isDemoMode } from './lib/firebase'
+

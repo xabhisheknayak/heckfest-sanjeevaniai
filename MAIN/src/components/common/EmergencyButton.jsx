@@ -139,7 +139,6 @@ export function EmergencyButton() {
   const handleCancel = () => {
     setModalStage('closed')
     setCountdown(3)
-    setLocationCopied(false)
   }
 
   // Google & Bing Emergency Maps Links
@@ -175,17 +174,7 @@ export function EmergencyButton() {
       }
     }
 
-    if (navigator.clipboard) {
-      try {
-        await navigator.clipboard.writeText(shareText)
-        setLocationCopied(true)
-        setTimeout(() => setLocationCopied(false), 3000)
-      } catch {
-        alert(shareText)
-      }
-    } else {
-      alert(shareText)
-    }
+    await copyToClipboard(shareText)
   }
 
   // WhatsApp Broadcast Handler

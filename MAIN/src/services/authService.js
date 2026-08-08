@@ -186,7 +186,10 @@ export const authService = {
       if (stored?.user) {
         callback(stored.user)
       } else {
-        callback(null)
+        const defaultUser = buildDemoUser('patient@sanjivni.ai', 'Asha Patel (Demo Patient)', USER_ROLES.PATIENT)
+        const defaultProfile = buildDemoProfile(defaultUser, USER_ROLES.PATIENT)
+        setStoredAuth(defaultUser, defaultProfile)
+        callback(defaultUser)
       }
       return () => {}
     }
@@ -197,33 +200,108 @@ export const authService = {
   },
 
   async getUserProfile(uid) {
+    if (!uid) return null
+
     if (isDemoMode) {
       const stored = getStoredAuth()
       if (stored?.profile) {
         return stored.profile
       }
-      // Fallback patient profile
-      return {
+      const demoProfile = {
         uid,
-        name: 'Demo Patient',
+        name: 'Asha Patel (Demo Patient)',
         email: 'patient@sanjivni.ai',
+        phone: '+91 98765 43210',
+        age: 30,
+        gender: 'Female',
+        bloodGroup: 'O+',
+        dateOfBirth: '1996-05-15',
+        address: '123 Health Ave, Mumbai, MH',
+        emergencyContact: '+91 98765 00000',
+        photoURL: '',
         role: USER_ROLES.PATIENT,
         createdAt: new Date().toISOString()
       }
+      return demoProfile
     }
 
-    const userDocRef = doc(db, 'users', uid)
-    const snapshot = await getDoc(userDocRef)
-    if (snapshot.exists()) {
-      return snapshot.data()
+    try {
+      const userDocRef = doc(db, 'users', uid)
+      const snapshot = await getDoc(userDocRef)
+      if (snapshot.exists()) {
+        return { uid, ...snapshot.data() }
+      }
+
+      // Document does not exist in Firestore -> Automatically create a basic profile document
+      console.info('Profile information was not found. Automatically creating a new profile document...')
+      const currentUser = auth?.currentUser
+      const newProfileDoc = {
+        uid,
+        name: currentUser?.displayName || 'Registered Patient',
+        email: currentUser?.email || '',
+        phone: '',
+        age: 30,
+        gender: 'Not specified',
+        bloodGroup: 'O+',
+        dateOfBirth: '',
+        address: '',
+        emergencyContact: '',
+        photoURL: currentUser?.photoURL || '',
+        role: USER_ROLES.PATIENT,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      }
+
+      await setDoc(userDocRef, newProfileDoc, { merge: true })
+      return { ...newProfileDoc, createdAt: new Date().toISOString() }
+    } catch (err) {
+      console.error('Profile loading error:', err)
     }
 
-    // Default fallback
+    // Safe fallback profile to prevent render crashes
     return {
-      uid,
-      name: 'Registered User',
+      uid: uid || '',
+      name: auth?.currentUser?.displayName || 'Registered Patient',
+      email: auth?.currentUser?.email || '',
+      phone: '',
+      age: 30,
+      gender: 'Not specified',
+      bloodGroup: 'O+',
+      dateOfBirth: '',
+      address: '',
+      emergencyContact: '',
+      photoURL: auth?.currentUser?.photoURL || '',
       role: USER_ROLES.PATIENT,
       createdAt: new Date().toISOString()
     }
+  },
+
+  async updateUserProfile(uid, updates) {
+    if (!uid) return null
+
+    if (isDemoMode) {
+      const stored = getStoredAuth() || {}
+      const updatedProfile = { ...(stored.profile || {}), ...updates, uid }
+      const updatedUser = { ...(stored.user || {}), displayName: updates.name || updates.fullName || stored.user?.displayName }
+      setStoredAuth(updatedUser, updatedProfile)
+      return updatedProfile
+    }
+
+    try {
+      const userDocRef = doc(db, 'users', uid)
+      const payload = {
+        ...updates,
+        updatedAt: serverTimestamp(),
+      }
+      await setDoc(userDocRef, payload, { merge: true })
+      if (updates.name && auth?.currentUser) {
+        await updateProfile(auth.currentUser, { displayName: updates.name })
+      }
+      return updates
+    } catch (err) {
+      console.error('Profile save error:', err)
+      throw new Error('Unable to save profile changes. Please try again.')
+    }
   }
 }
+

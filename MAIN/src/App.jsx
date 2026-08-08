@@ -102,8 +102,8 @@ function App() {
   const isOnline = useOnlineStatus()
 
   return (
-    <AuthProvider>
-      <ErrorBoundary>
+    <ErrorBoundary>
+      <AuthProvider>
         <BrowserRouter>
           <div className="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 transition-colors duration-300">
             {!isOnline && (
@@ -117,8 +117,8 @@ function App() {
             <QuickActionsFAB />
           </div>
         </BrowserRouter>
-      </ErrorBoundary>
-    </AuthProvider>
+      </AuthProvider>
+    </ErrorBoundary>
   )
 }
 

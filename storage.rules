@@ -1,0 +1,23 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Patient medical records files path: medicalRecords/{patientId}/{fileName}
+    match /medicalRecords/{patientId}/{fileName} {
+      // Patient can read their own files; verified Doctors/Admins can read
+      allow read: if request.auth != null && (
+        request.auth.uid == patientId ||
+        firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role in ['doctor', 'admin']
+      );
+
+      // Patient can upload files up to 10MB in PDF, JPG, JPEG, or PNG formats
+      allow create, update: if request.auth != null && 
+        request.auth.uid == patientId &&
+        request.resource.size <= 10 * 1024 * 1024 &&
+        request.resource.contentType.matches('application/pdf|image/jpeg|image/jpg|image/png');
+
+      // Patient can delete their own files
+      allow delete: if request.auth != null && request.auth.uid == patientId;
+    }
+  }
+}

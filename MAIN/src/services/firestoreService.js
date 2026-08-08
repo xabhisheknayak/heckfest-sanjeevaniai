@@ -48,12 +48,16 @@ export const firestoreService = {
     if (isDemoMode) {
       const key = `${DEMO_STORAGE_PREFIX}${collectionName}-${docId}`
       const raw = localStorage.getItem(key)
-      if (raw) return JSON.parse(raw)
+      if (raw) {
+        try { return JSON.parse(raw) } catch { /* ignore */ }
+      }
       
       // Fallback for user profiles in localstorage
       if (collectionName === 'users') {
         const rawUser = localStorage.getItem(DEMO_STORAGE_PREFIX + 'users-' + docId)
-        if (rawUser) return JSON.parse(rawUser)
+        if (rawUser) {
+          try { return JSON.parse(rawUser) } catch { /* ignore */ }
+        }
       }
       return null
     }

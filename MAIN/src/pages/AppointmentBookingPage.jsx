@@ -112,10 +112,10 @@ export default function AppointmentBookingPage() {
       const refId = `APT-${Math.floor(100000 + Math.random() * 900000)}`
       await createAppointment({
         title: reason.trim() || 'Routine wellness assessment',
-        time: `${selectedDate.value} at ${selectedTime}`,
-        doctor: selectedDoctor.name,
-        facility: selectedFacility.name,
-        facilityAddress: selectedFacility.address,
+        time: `${selectedDate?.value || 'Selected Date'} at ${selectedTime}`,
+        doctor: selectedDoctor?.name || 'Healthcare Provider',
+        facility: selectedFacility?.name || 'Care Facility',
+        facilityAddress: selectedFacility?.address || '',
         ref: refId
       })
       setBookingRef(refId)
