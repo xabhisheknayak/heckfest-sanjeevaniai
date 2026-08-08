@@ -9,7 +9,7 @@ import { EmergencyContactsManager } from '../components/common/EmergencyContacts
 export default function ProfilePage() {
   const { profile, user } = useAuth()
 
-  const name = profile?.name || user?.displayName || 'Guest Patient'
+  const name = profile?.name || user?.displayName || 'Guest User'
   const email = profile?.email || user?.email || 'demo@sanjivni.ai'
   const createdAt = profile?.createdAt ? new Date(profile.createdAt).toLocaleDateString() : 'Active Member'
 
@@ -30,9 +30,16 @@ export default function ProfilePage() {
               </div>
               <div>
                 <p className="text-xl font-semibold text-slate-900 dark:text-slate-100">{name}</p>
-                <p className="text-sm text-slate-500 dark:text-slate-400">Patient • SanjivniAI member</p>
+                <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400 capitalize">
+                  {profile?.role === 'doctor'
+                    ? '👨‍⚕️ Doctor (Verified Practitioner)'
+                    : profile?.role === 'admin'
+                    ? '🛡️ System Administrator'
+                    : '👤 Patient Care Member'}
+                </p>
               </div>
             </div>
+
             <div className="mt-6 space-y-3 text-sm text-slate-600 dark:text-slate-400">
               <div className="flex items-center gap-2">
                 <Mail className="h-4 w-4 text-[#16A34A]" /> {email}
@@ -60,17 +67,23 @@ export default function ProfilePage() {
                 </div>
               ))}
             </div>
-            <Link to="/settings">
-              <Button className="mt-6">Edit profile <ArrowRight className="ml-2 h-4 w-4" /></Button>
-            </Link>
+
+            <div className="mt-6 border-t pt-6 dark:border-slate-800">
+              <Link to="/settings">
+                <Button variant="secondary" className="w-full py-3">
+                  Manage Account Settings <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </Link>
+            </div>
           </Card>
         </div>
 
-        <div className="mt-6">
-          <Card className="p-6 dark:border-slate-800 dark:bg-slate-900/80">
+        {/* Emergency Contacts System for Patients */}
+        {profile?.role !== 'admin' && (
+          <div className="mt-8">
             <EmergencyContactsManager />
-          </Card>
-        </div>
+          </div>
+        )}
       </div>
     </div>
   )

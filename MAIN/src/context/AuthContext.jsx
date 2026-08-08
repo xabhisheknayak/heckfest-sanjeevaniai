@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { authService } from '../services/authService'
 import { dataService } from '../services/dataService'
 import { AuthContext } from './AuthContextObject'
+import { USER_ROLES } from '../constants/roles'
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
@@ -30,10 +31,10 @@ export function AuthProvider({ children }) {
     return () => unsubscribe()
   }, [])
 
-  const signIn = useCallback(async (email, password) => {
+  const signIn = useCallback(async (email, password, role) => {
     setError('')
     try {
-      const authUser = await authService.signIn(email, password)
+      const authUser = await authService.signIn(email, password, role)
       const profileData = await authService.getUserProfile(authUser.uid)
       setUser(authUser)
       setProfile(profileData)
@@ -44,10 +45,10 @@ export function AuthProvider({ children }) {
     }
   }, [])
 
-  const signUp = useCallback(async ({ name, email, password }) => {
+  const signUp = useCallback(async (userData) => {
     setError('')
     try {
-      const createdUser = await authService.signUp({ name, email, password })
+      const createdUser = await authService.signUp(userData)
       const profileData = await authService.getUserProfile(createdUser.uid)
       setUser(createdUser)
       setProfile(profileData)
@@ -120,9 +121,18 @@ export function AuthProvider({ children }) {
     return dataService.getImageAnalyses(user.uid)
   }, [user])
 
+  const currentRole = profile?.role || USER_ROLES.PATIENT
+  const isPatient = currentRole === USER_ROLES.PATIENT
+  const isDoctor = currentRole === USER_ROLES.DOCTOR
+  const isAdmin = currentRole === USER_ROLES.ADMIN
+
   const value = useMemo(() => ({
     user,
     profile,
+    role: currentRole,
+    isPatient,
+    isDoctor,
+    isAdmin,
     loading,
     error,
     signIn,
@@ -140,6 +150,10 @@ export function AuthProvider({ children }) {
   }), [
     user,
     profile,
+    currentRole,
+    isPatient,
+    isDoctor,
+    isAdmin,
     loading,
     error,
     signIn,

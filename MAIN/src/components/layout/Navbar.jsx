@@ -3,11 +3,14 @@ import { Bell, Menu, Sparkles } from 'lucide-react'
 import { Button } from '../ui/Button'
 import { ThemeToggle } from './ThemeToggle'
 import { useAuth } from '../../hooks/useAuth'
+import { getNavigationForRole } from '../../config/navigationConfig'
 import { motion } from 'framer-motion'
 
 export function Navbar({ onToggleSidebar }) {
   const navigate = useNavigate()
-  const { user, logout } = useAuth()
+  const { user, role, logout } = useAuth()
+
+  const navConfig = getNavigationForRole(role)
 
   const handleLogout = async () => {
     await logout()
@@ -26,22 +29,30 @@ export function Navbar({ onToggleSidebar }) {
           >
             <Menu className="h-5 w-5" />
           </motion.button>
-          <Link to="/" className="flex items-center gap-2 group focus-ring rounded-2xl p-1">
+          <Link to={navConfig.mainDashboardPath} className="flex items-center gap-2 group focus-ring rounded-2xl p-1">
             <div className="rounded-2xl bg-[#DCFCE7] p-2 text-[#16A34A] dark:bg-emerald-950/50 group-hover:scale-105 transition">
               <Sparkles className="h-5 w-5" />
             </div>
             <div>
               <p className="text-sm font-bold text-slate-900 dark:text-white leading-tight">SanjivniAI</p>
-              <p className="text-xs text-slate-500 dark:text-slate-400">AI Healthcare</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">{navConfig.roleLabel}</p>
             </div>
           </Link>
         </div>
 
-        <nav className="hidden items-center gap-8 text-sm font-semibold text-slate-600 md:flex dark:text-slate-300">
-          <NavLink to="/" className={({ isActive }) => isActive ? 'text-[#16A34A] dark:text-[#16A34A] font-bold' : 'hover:text-[#16A34A] transition'}>Home</NavLink>
-          <NavLink to="/dashboard" className={({ isActive }) => isActive ? 'text-[#16A34A] dark:text-[#16A34A] font-bold' : 'hover:text-[#16A34A] transition'}>Dashboard</NavLink>
-          <NavLink to="/symptom-checker" className={({ isActive }) => isActive ? 'text-[#16A34A] dark:text-[#16A34A] font-bold' : 'hover:text-[#16A34A] transition'}>Symptom Checker</NavLink>
-          <NavLink to="/doctor-finder" className={({ isActive }) => isActive ? 'text-[#16A34A] dark:text-[#16A34A] font-bold' : 'hover:text-[#16A34A] transition'}>Doctors</NavLink>
+        {/* Dynamic Role-Aware Nav Links */}
+        <nav className="hidden items-center gap-6 text-xs font-bold text-slate-600 md:flex dark:text-slate-300">
+          {navConfig.navbarLinks.map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              className={({ isActive }) =>
+                isActive ? 'text-[#16A34A] dark:text-[#16A34A] font-extrabold' : 'hover:text-[#16A34A] transition'
+              }
+            >
+              {item.label}
+            </NavLink>
+          ))}
         </nav>
 
         <div className="flex items-center gap-3">
@@ -55,10 +66,10 @@ export function Navbar({ onToggleSidebar }) {
             <Bell className="h-5 w-5" />
           </motion.button>
           {user ? (
-            <Button variant="secondary" className="hidden sm:inline-flex" onClick={handleLogout}>Logout</Button>
+            <Button variant="secondary" className="hidden sm:inline-flex text-xs py-2" onClick={handleLogout}>Logout</Button>
           ) : (
             <Link to="/login">
-              <Button variant="secondary" className="hidden sm:inline-flex">Sign in</Button>
+              <Button variant="secondary" className="hidden sm:inline-flex text-xs py-2">Sign in</Button>
             </Link>
           )}
         </div>
